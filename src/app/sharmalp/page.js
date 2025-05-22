@@ -160,7 +160,7 @@ export default function Home() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-[#F5EEDD] p-4 rounded-lg">
                       <h5 className="font-bold text-[#077A7D] mb-2">Attendance Tracking</h5>
-                      <p className="text-sm text-[#16404D]">Monitor who's on time, late, or absent</p>
+                      <p className="text-sm text-[#16404D]">Monitor who&apos;s on time, late, or absent</p>
                     </div>
                     <div className="bg-[#F5EEDD] p-4 rounded-lg">
                       <h5 className="font-bold text-[#077A7D] mb-2">Analytics Dashboard</h5>
@@ -181,7 +181,7 @@ export default function Home() {
           )}
         </div>
       </section>
-
+      
       {/* Features Section */}
       <section id="features" className="py-20 bg-white">
         <div className="container mx-auto px-6">
