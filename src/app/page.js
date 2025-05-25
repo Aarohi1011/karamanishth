@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
-
+import Link from 'next/link';
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -95,7 +95,9 @@ export default function Home() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button className="bg-[#077A7D] hover:bg-[#065E60] text-white px-6 py-3 rounded-md transition-colors font-medium">
-                  Start Free Trial
+              <Link href='/login'>
+                  Login
+              </Link>
                 </button>
                 <button className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium">
                   See Demo
