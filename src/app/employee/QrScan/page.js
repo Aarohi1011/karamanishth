@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiClock, FiCalendar, FiCheck, FiX, FiRefreshCw, FiVideo, FiVideoOff } from 'react-icons/fi';
 import QrScanner from 'qr-scanner';
 
-const TeacherAttendancePage = () => {
+const EmployeeAttendancePage = () => {
     const [scanResult, setScanResult] = useState('');
     const [loading, setLoading] = useState(false);
     const [isScanning, setIsScanning] = useState(false);
@@ -17,18 +17,20 @@ const TeacherAttendancePage = () => {
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
 
-    const handleScan = (result) => {
+    const handleScan = useCallback((result) => {
         if (result) {
             setScanResult(result.data);
             setIsResultReady(true);
             stopScanner();
         }
-    };
+    }, []);
 
-    const handleError = (err) => {
-        console.error('Error scanning QR code:', err);
-        showToast('Error scanning QR code. Please try again.', 'error');
-    };
+    const handleError = useCallback((err) => {
+        // Only show error if we were actually scanning
+        if (isScanning) {
+            showToast('Error scanning QR code. Please try again.', 'error');
+        }
+    }, [isScanning]);
 
     const startScanner = async (cameraId = null) => {
         if (videoRef.current) {
@@ -43,6 +45,7 @@ const TeacherAttendancePage = () => {
                         highlightScanRegion: true,
                         highlightCodeOutline: true,
                         onDecodeError: handleError,
+                        maxScansPerSecond: 2 // Reduce scan rate to minimize logs
                     }
                 );
                 
@@ -53,13 +56,11 @@ const TeacherAttendancePage = () => {
                     const availableCameras = await QrScanner.listCameras(true);
                     setCameras(availableCameras);
                     
-                    // Set the initially selected camera
                     if (availableCameras.length > 0) {
                         setSelectedCamera(availableCameras[0].id);
                     }
                 }
             } catch (err) {
-                console.error('Failed to start scanner:', err);
                 showToast('Failed to access camera. Please check permissions.', 'error');
                 setIsScanning(false);
             }
@@ -109,7 +110,7 @@ const TeacherAttendancePage = () => {
     const sendTokenToApi = useCallback(async (token) => {
         setLoading(true);
         try {
-            const response = await fetch('/api/attendance/TeacherAttendance', {
+            const response = await fetch('/api/attendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -117,7 +118,7 @@ const TeacherAttendancePage = () => {
                 body: JSON.stringify({
                     token,
                     date,
-                    trackingstatus: 'Arrival'
+                    status: 'Present'
                 }),
             });
 
@@ -134,7 +135,6 @@ const TeacherAttendancePage = () => {
                 showToast(errorData.msg || 'Failed to verify token.', 'error');
             }
         } catch (error) {
-            console.error('Error sending token:', error);
             showToast('An error occurred while submitting the token.', 'error');
         } finally {
             setLoading(false);
@@ -142,7 +142,7 @@ const TeacherAttendancePage = () => {
     }, [date]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-[#06202B] to-[#16404D] p-4 md:p-8">
             {/* Toast Notification */}
             <AnimatePresence>
                 {toast && (
@@ -151,8 +151,8 @@ const TeacherAttendancePage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
-                        className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-xl text-white font-medium flex items-center ${
-                            toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                        className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-xl text-[#F5EEDD] font-medium flex items-center ${
+                            toast.type === 'success' ? 'bg-[#077A7D]' : 'bg-[#DDA853]'
                         }`}
                     >
                         {toast.type === 'success' ? (
@@ -169,21 +169,21 @@ const TeacherAttendancePage = () => {
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden"
+                className="max-w-md mx-auto bg-[#FBF5DD] rounded-2xl shadow-xl overflow-hidden"
             >
                 {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-white text-center">
-                    <h1 className="text-2xl font-bold">Teacher Attendance</h1>
-                    <p className="text-white/90 mt-1">Mark your daily attendance</p>
+                <div className="bg-gradient-to-r from-[#077A7D] to-[#16404D] p-6 text-[#F5EEDD] text-center">
+                    <h1 className="text-2xl font-bold">Employee Attendance</h1>
+                    <p className="text-[#A6CDC6] mt-1">Mark your daily attendance</p>
                 </div>
 
                 {/* Main Content */}
                 <div className="p-6">
                     {/* Date Display */}
                     <div className="flex justify-center mb-6">
-                        <div className="bg-blue-50 rounded-lg px-4 py-2 flex items-center">
-                            <FiCalendar className="mr-2 text-blue-600" />
-                            <span className="text-blue-800 font-medium">{new Date(date).toLocaleDateString('en-US', {
+                        <div className="bg-[#F5EEDD] rounded-lg px-4 py-2 flex items-center border border-[#A6CDC6]">
+                            <FiCalendar className="mr-2 text-[#077A7D]" />
+                            <span className="text-[#16404D] font-medium">{new Date(date).toLocaleDateString('en-US', {
                                 weekday: 'long',
                                 year: 'numeric',
                                 month: 'long',
@@ -197,14 +197,14 @@ const TeacherAttendancePage = () => {
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6 text-center"
+                            className="bg-[#7AE2CF]/20 border border-[#7AE2CF] rounded-xl p-6 mb-6 text-center"
                         >
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FiCheck className="w-8 h-8 text-green-600" />
+                            <div className="w-16 h-16 bg-[#7AE2CF]/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FiCheck className="w-8 h-8 text-[#077A7D]" />
                             </div>
-                            <h3 className="text-lg font-semibold text-green-800 mb-1">Attendance Recorded</h3>
-                            <p className="text-green-600 mb-2">You marked your attendance at {attendanceStatus.time}</p>
-                            <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                            <h3 className="text-lg font-semibold text-[#16404D] mb-1">Attendance Recorded</h3>
+                            <p className="text-[#077A7D] mb-2">You marked your attendance at {attendanceStatus.time}</p>
+                            <span className="inline-block px-3 py-1 bg-[#7AE2CF]/30 text-[#16404D] rounded-full text-sm font-medium">
                                 {attendanceStatus.status}
                             </span>
                         </motion.div>
@@ -212,19 +212,19 @@ const TeacherAttendancePage = () => {
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
-                            className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6 text-center"
+                            className="bg-[#F5EEDD] border border-[#A6CDC6] rounded-xl p-6 mb-6 text-center"
                         >
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FiUser className="w-8 h-8 text-blue-600" />
+                            <div className="w-16 h-16 bg-[#7AE2CF]/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FiUser className="w-8 h-8 text-[#077A7D]" />
                             </div>
-                            <h3 className="text-lg font-semibold text-blue-800 mb-2">Mark Your Attendance</h3>
-                            <p className="text-blue-600 mb-4">Scan your QR code to register your arrival time</p>
+                            <h3 className="text-lg font-semibold text-[#16404D] mb-2">Mark Your Attendance</h3>
+                            <p className="text-[#077A7D] mb-4">Scan your QR code to register your arrival time</p>
 
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsScanning(true)}
-                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-medium rounded-lg shadow-md flex items-center mx-auto"
+                                className="px-6 py-3 bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] font-medium rounded-lg shadow-md flex items-center mx-auto"
                             >
                                 Scan QR Code
                             </motion.button>
@@ -238,48 +238,54 @@ const TeacherAttendancePage = () => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black z-50 flex flex-col"
+                                className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
                             >
-                                {/* Scanner Header */}
-                                <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
-                                    <h3 className="text-xl font-semibold">Scan QR Code</h3>
-                                    <button
-                                        onClick={() => setIsScanning(false)}
-                                        className="text-white hover:text-blue-200 p-2"
-                                    >
-                                        <FiX className="w-6 h-6" />
-                                    </button>
-                                </div>
+                                <motion.div 
+                                    className="bg-[#FBF5DD] rounded-xl shadow-xl w-full max-w-md overflow-hidden"
+                                    initial={{ scale: 0.9 }}
+                                    animate={{ scale: 1 }}
+                                >
+                                    {/* Scanner Header */}
+                                    <div className="bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] p-4 flex justify-between items-center">
+                                        <h3 className="text-xl font-semibold">Scan QR Code</h3>
+                                        <button
+                                            onClick={() => setIsScanning(false)}
+                                            className="text-[#F5EEDD] hover:text-[#7AE2CF] p-2"
+                                        >
+                                            <FiX className="w-6 h-6" />
+                                        </button>
+                                    </div>
 
-                                {/* Scanner Content */}
-                                <div className="flex-1 flex flex-col">
-                                    <div className="flex-1 relative">
-                                        <video
-                                            ref={videoRef}
-                                            className="w-full h-full object-cover"
-                                        />
+                                    {/* Scanner Content */}
+                                    <div className="p-4">
+                                        <div className="relative aspect-square bg-black rounded-lg overflow-hidden">
+                                            <video
+                                                ref={videoRef}
+                                                className="w-full h-full object-cover"
+                                            />
 
-                                        {/* Scanner Frame Overlay */}
-                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                            <div className="border-4 border-white/50 rounded-xl w-64 h-64 relative">
-                                                <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-white"></div>
-                                                <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-white"></div>
-                                                <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-white"></div>
-                                                <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-white"></div>
+                                            {/* Scanner Frame Overlay */}
+                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                <div className="border-4 border-[#7AE2CF]/50 rounded-xl w-64 h-64 relative">
+                                                    <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-[#7AE2CF]"></div>
+                                                    <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-[#7AE2CF]"></div>
+                                                    <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-[#7AE2CF]"></div>
+                                                    <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-[#7AE2CF]"></div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* Camera Selection Dropdown */}
                                         {cameras.length > 0 && (
-                                            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 text-blue-700 px-4 py-2 rounded-lg shadow-lg font-medium hover:bg-white flex flex-col items-center">
+                                            <div className="mt-4 bg-[#F5EEDD] border border-[#A6CDC6] text-[#16404D] px-4 py-2 rounded-lg font-medium">
                                                 <div className="flex items-center mb-2">
-                                                    <FiVideo className="mr-2" />
+                                                    <FiVideo className="mr-2 text-[#077A7D]" />
                                                     <span>Select Camera:</span>
                                                 </div>
                                                 <select
                                                     value={selectedCamera || ''}
                                                     onChange={(e) => switchCamera(e.target.value)}
-                                                    className="bg-white border border-blue-200 rounded px-3 py-1 text-blue-800 w-full"
+                                                    className="w-full bg-white border border-[#A6CDC6] rounded px-3 py-1 text-[#16404D]"
                                                 >
                                                     {cameras.map((camera) => (
                                                         <option key={camera.id} value={camera.id}>
@@ -289,12 +295,12 @@ const TeacherAttendancePage = () => {
                                                 </select>
                                             </div>
                                         )}
-                                    </div>
 
-                                    <div className="bg-black/80 text-white p-4 text-center">
-                                        <p className="text-lg">Position your QR code within the frame</p>
+                                        <div className="mt-4 text-center text-[#16404D]">
+                                            <p>Position your QR code within the frame</p>
+                                        </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -309,18 +315,18 @@ const TeacherAttendancePage = () => {
                                 className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
                             >
                                 <motion.div
-                                    className="bg-white rounded-xl shadow-xl w-full max-w-sm"
+                                    className="bg-[#FBF5DD] rounded-xl shadow-xl w-full max-w-sm"
                                     initial={{ y: 20 }}
                                     animate={{ y: 0 }}
                                 >
                                     <div className="p-6 text-center">
-                                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mb-4">
-                                            <FiUser className="h-6 w-6 text-blue-600" />
+                                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-[#7AE2CF]/30 mb-4">
+                                            <FiUser className="h-6 w-6 text-[#077A7D]" />
                                         </div>
-                                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                                        <h3 className="text-lg font-medium text-[#16404D] mb-2">
                                             Confirm Attendance
                                         </h3>
-                                        <p className="text-gray-500 mb-6">
+                                        <p className="text-[#077A7D] mb-6">
                                             Are you sure you want to mark your attendance now?
                                         </p>
                                         <div className="flex justify-center space-x-4">
@@ -328,7 +334,7 @@ const TeacherAttendancePage = () => {
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => setIsResultReady(false)}
-                                                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                                                className="px-6 py-2 border border-[#A6CDC6] rounded-md text-[#16404D] bg-[#F5EEDD] hover:bg-[#A6CDC6]/20"
                                             >
                                                 Cancel
                                             </motion.button>
@@ -336,7 +342,7 @@ const TeacherAttendancePage = () => {
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => sendTokenToApi(scanResult)}
-                                                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                                                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-[#F5EEDD] bg-gradient-to-r from-[#077A7D] to-[#16404D] hover:from-[#16404D] hover:to-[#077A7D]"
                                             >
                                                 {loading ? (
                                                     <span className="flex items-center">
@@ -362,4 +368,4 @@ const TeacherAttendancePage = () => {
     );
 };
 
-export default TeacherAttendancePage;
+export default EmployeeAttendancePage;
