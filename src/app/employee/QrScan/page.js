@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiClock, FiCalendar, FiCheck, FiX, FiRefreshCw } from 'react-icons/fi';
+import { FiUser, FiClock, FiCalendar, FiCheck, FiX, FiRefreshCw, FiVideo, FiVideoOff } from 'react-icons/fi';
 import QrScanner from 'qr-scanner';
 
 const TeacherAttendancePage = () => {
@@ -11,14 +11,11 @@ const TeacherAttendancePage = () => {
     const [isResultReady, setIsResultReady] = useState(false);
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [attendanceStatus, setAttendanceStatus] = useState(null);
-    const [facingMode, setFacingMode] = useState('environment');
     const [toast, setToast] = useState(null);
+    const [cameras, setCameras] = useState([]);
+    const [selectedCamera, setSelectedCamera] = useState(null);
     const videoRef = useRef(null);
     const qrScannerRef = useRef(null);
-
-    const toggleCamera = () => {
-        setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
-    };
 
     const handleScan = (result) => {
         if (result) {
@@ -30,21 +27,42 @@ const TeacherAttendancePage = () => {
 
     const handleError = (err) => {
         console.error('Error scanning QR code:', err);
+        showToast('Error scanning QR code. Please try again.', 'error');
     };
 
-    const startScanner = () => {
-        if (videoRef.current && !qrScannerRef.current) {
-            qrScannerRef.current = new QrScanner(
-                videoRef.current,
-                handleScan,
-                {
-                    preferredCamera: facingMode,
-                    highlightScanRegion: true,
-                    highlightCodeOutline: true,
-                    onDecodeError: handleError,
+    const startScanner = async (cameraId = null) => {
+        if (videoRef.current) {
+            stopScanner();
+            
+            try {
+                qrScannerRef.current = new QrScanner(
+                    videoRef.current,
+                    handleScan,
+                    {
+                        preferredCamera: cameraId || undefined,
+                        highlightScanRegion: true,
+                        highlightCodeOutline: true,
+                        onDecodeError: handleError,
+                    }
+                );
+                
+                await qrScannerRef.current.start();
+                
+                // Get available cameras if we haven't already
+                if (cameras.length === 0) {
+                    const availableCameras = await QrScanner.listCameras(true);
+                    setCameras(availableCameras);
+                    
+                    // Set the initially selected camera
+                    if (availableCameras.length > 0) {
+                        setSelectedCamera(availableCameras[0].id);
+                    }
                 }
-            );
-            qrScannerRef.current.start();
+            } catch (err) {
+                console.error('Failed to start scanner:', err);
+                showToast('Failed to access camera. Please check permissions.', 'error');
+                setIsScanning(false);
+            }
         }
     };
 
@@ -56,9 +74,16 @@ const TeacherAttendancePage = () => {
         }
     };
 
+    const switchCamera = async (cameraId) => {
+        setSelectedCamera(cameraId);
+        if (isScanning) {
+            await startScanner(cameraId);
+        }
+    };
+
     useEffect(() => {
         if (isScanning) {
-            startScanner();
+            startScanner(selectedCamera);
         } else {
             stopScanner();
         }
@@ -66,7 +91,7 @@ const TeacherAttendancePage = () => {
         return () => {
             stopScanner();
         };
-    }, [isScanning, facingMode]);
+    }, [isScanning]);
 
     const showToast = (message, type) => {
         const newToast = {
@@ -243,13 +268,27 @@ const TeacherAttendancePage = () => {
                                                 <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-white"></div>
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={toggleCamera}
-                                            className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 text-blue-700 px-4 py-2 rounded-lg shadow-lg font-medium hover:bg-white flex items-center"
-                                        >
-                                            <FiRefreshCw className="mr-2" />
-                                            Switch Camera ({facingMode === 'environment' ? 'Front' : 'Back'})
-                                        </button>
+
+                                        {/* Camera Selection Dropdown */}
+                                        {cameras.length > 0 && (
+                                            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-white/90 text-blue-700 px-4 py-2 rounded-lg shadow-lg font-medium hover:bg-white flex flex-col items-center">
+                                                <div className="flex items-center mb-2">
+                                                    <FiVideo className="mr-2" />
+                                                    <span>Select Camera:</span>
+                                                </div>
+                                                <select
+                                                    value={selectedCamera || ''}
+                                                    onChange={(e) => switchCamera(e.target.value)}
+                                                    className="bg-white border border-blue-200 rounded px-3 py-1 text-blue-800 w-full"
+                                                >
+                                                    {cameras.map((camera) => (
+                                                        <option key={camera.id} value={camera.id}>
+                                                            {camera.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="bg-black/80 text-white p-4 text-center">
