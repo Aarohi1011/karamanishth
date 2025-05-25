@@ -35,7 +35,7 @@ const EmployeeDashboard = () => {
         {/* Header */}
         <header className="mb-8">
           <h1 className="text-3xl font-bold text-[#06202B]">Employee Dashboard</h1>
-          <p className="text-[#16404D]">Welcome back, John Doe! Here's your daily overview.</p>
+          <p className="text-[#16404D]">Welcome back, John Doe! Here is your daily overview.</p>
         </header>
 
         {/* Dashboard Cards */}
@@ -54,7 +54,7 @@ const EmployeeDashboard = () => {
                 <>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                    <p className="text-lg font-medium text-[#077A7D]">You're in the shop</p>
+                    <p className="text-lg font-medium text-[#077A7D]">You are in the shop</p>
                   </div>
                   <p className="text-[#16404D] mb-4">Checked in at {employeeStatus.lastCheckIn}</p>
                   <button className="w-full py-2 bg-gradient-to-r from-[#DDA853] to-[#F5EEDD] text-[#06202B] rounded-lg font-medium hover:opacity-90 transition-opacity">
@@ -65,7 +65,7 @@ const EmployeeDashboard = () => {
                 <>
                   <div className="flex items-center mb-2">
                     <div className="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-                    <p className="text-lg font-medium text-[#16404D]">You're not in the shop</p>
+                    <p className="text-lg font-medium text-[#16404D]">You are not in the shop</p>
                   </div>
                   <p className="text-[#16404D] mb-4">Last checked out at {employeeStatus.lastCheckOut}</p>
                   <button className="w-full py-2 bg-gradient-to-r from-[#077A7D] to-[#7AE2CF] text-white rounded-lg font-medium hover:opacity-90 transition-opacity">
