@@ -8,4 +8,4 @@ const employee_management = () => {
   )
 }
 
-export default employee_managemen
+export default employee_management
