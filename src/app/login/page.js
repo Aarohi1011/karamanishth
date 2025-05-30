@@ -1,23 +1,58 @@
 'use client'
 import React, { useState } from 'react';
 import Head from 'next/head';
-
+import { useRouter } from 'next/navigation';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  setIsLoading(true);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      console.log({ email, password, rememberMe });
-      setIsLoading(false);
-    }, 1500);
-  };
+  try {
+    const response = await fetch('/api/employee/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        rememberMe,
+      }),
+    });
+
+    const data = await response.json();
+    console.log(data);
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Something went wrong');
+    }
+      if (data.role) {
+        if (data.role === 'Staff') {
+          router.push('/employee');
+        }
+        if (data.role === 'Owner' || data.role === " Manager" || data.role==="Head") {
+          router.push('/admin');
+        }
+      }
+    console.log('Login successful:', data);
+    // Optionally redirect or store token
+    // localStorage.setItem('token', data.token);
+    // router.push('/dashboard');
+
+  } catch (error) {
+    console.error('Login failed:', error.message);
+    alert(error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#06202B] to-[#16404D] flex flex-col justify-center py-12 sm:px-6 lg:px-8">

@@ -1,7 +1,32 @@
-import React from 'react';
+'use client'
+import React, { useEffect } from 'react';
 import { FiHome, FiClock, FiCalendar, FiDownload, FiLogOut, FiUserCheck, FiUserX, FiAlertCircle } from 'react-icons/fi';
-
+import { auth } from '../lib/auth';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 const EmployeeDashboard = () => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const userData = await auth();
+        console.log(userData);
+        if (userData === 'No Token') {
+          router.push('/login');
+        } else {
+          
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Failed to load user data');
+        setIsLoading(false);
+      }
+    };
+
+    getUserData();
+  }, [router]);
   // Sample data - replace with real data from your API
   const employeeStatus = {
     isInShop: true,

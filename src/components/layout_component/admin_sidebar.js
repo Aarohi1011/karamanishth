@@ -4,8 +4,9 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
   MdOutlineSpaceDashboard,
-  MdQrCodeScanner,
-  MdHistory,
+  MdPeople,
+  MdCalendarToday,
+  MdAnalytics,
   MdExitToApp,
   MdChevronLeft,
   MdChevronRight,
@@ -86,7 +87,7 @@ export default function Admin_Sidebar({
 
         {/* Logo/Title */}
         <Link
-          href="/employee"
+          href="/admin"
           onClick={handleLinkClick}
           className={`flex items-center gap-3 text-xl font-bold justify-center py-4 mx-2 rounded-lg transition duration-200 ease-in-out hover:bg-[#077A7D]
             ${(isDesktopSidebarCollapsed && !isHovering) ? 'px-2 justify-center' : 'px-4'}`}
@@ -100,7 +101,7 @@ export default function Admin_Sidebar({
               </svg>
             </span>
           ) : (
-            <span className="text-[#F5EEDD]">Employee</span>
+            <span className="text-[#F5EEDD]">Admin Dashboard</span>
           )}
         </Link>
 
@@ -133,10 +134,10 @@ export default function Admin_Sidebar({
 
           <nav className="flex flex-col gap-1 px-2">
             {/* Dashboard Button */}
-            <Link href="/employee" onClick={handleLinkClick}>
+            <Link href="/admin" onClick={handleLinkClick}>
               <button
                 className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
-                  ${isActive(['/employee'])}
+                  ${isActive(['/admin'])}
                   ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
               >
                 <MdOutlineSpaceDashboard className='text-xl text-[#F5EEDD]' />
@@ -144,27 +145,51 @@ export default function Admin_Sidebar({
               </button>
             </Link>
 
-            {/* QR Scan Button */}
-            <Link href="/employee/QrScan" onClick={handleLinkClick}>
+            {/* Employee Management Button */}
+            <Link href="/admin/employee_management" onClick={handleLinkClick}>
               <button
                 className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
-                  ${isActive(['/employee/QrScan'])}
+                  ${isActive(['/admin/employee_management'])}
                   ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
               >
-                <MdQrCodeScanner className='text-xl text-[#F5EEDD]' />
-                {(!isDesktopSidebarCollapsed || isHovering) && 'QR Scan'}
+                <MdPeople className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Employee Management'}
               </button>
             </Link>
 
-            {/* History Button */}
-            <Link href="/employee/History" onClick={handleLinkClick}>
+            {/* Daily Attendance Button */}
+            <Link href="/admin/daily_attendance" onClick={handleLinkClick}>
               <button
                 className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
-                  ${isActive(['/employee/History'])}
+                  ${isActive(['/admin/daily_attendance'])}
                   ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
               >
-                <MdHistory className='text-xl text-[#F5EEDD]' />
-                {(!isDesktopSidebarCollapsed || isHovering) && 'History'}
+                <MdCalendarToday className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Daily Attendance'}
+              </button>
+            </Link>
+
+            {/* Attendance Analysis Button */}
+            <Link href="/admin/attendance_analysis" onClick={handleLinkClick}>
+              <button
+                className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
+                  ${isActive(['/admin/attendance_analysis'])}
+                  ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
+              >
+                <MdAnalytics className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Attendance Analysis'}
+              </button>
+            </Link>
+
+            {/* Holidays Button */}
+            <Link href="/admin/holidays" onClick={handleLinkClick}>
+              <button
+                className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
+                  ${isActive(['/admin/holidays'])}
+                  ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
+              >
+                <MdCalendarToday className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Holidays'}
               </button>
             </Link>
 
@@ -185,8 +210,8 @@ export default function Admin_Sidebar({
       <aside className={`lg:hidden fixed top-0 left-0 h-screen bg-gradient-to-b from-[#06202B] to-[#16404D] text-[#F5EEDD] p-4 flex flex-col gap-4 w-64 z-[100] transform transition-all duration-300 ease-in-out shadow-xl mobile-sidebar
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-center relative gap-2 text-xl font-bold mb-4 text-center">
-          <Link href="/Head" onClick={handleLinkClick}>
-            <span className="text-[#F5EEDD]">Employee Dashboard</span>
+          <Link href="/admin" onClick={handleLinkClick}>
+            <span className="text-[#F5EEDD]">Admin Dashboard</span>
           </Link>
           <button
             className="p-2 text-[#F5EEDD] rounded absolute right-0 text-xl hover:bg-[#077A7D] transition-colors"
@@ -201,26 +226,42 @@ export default function Admin_Sidebar({
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-[#077A7D] scrollbar-track-transparent hover:scrollbar-thumb-[#077A7D] scroll-smooth">
           <nav className="flex flex-col gap-1">
             {/* Dashboard Button */}
-            <Link href="/employee" onClick={handleLinkClick}>
-              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/employee'])}`}>
+            <Link href="/admin" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin'])}`}>
                 <MdOutlineSpaceDashboard className='text-xl text-[#F5EEDD]' />
                 Dashboard
               </button>
             </Link>
 
-            {/* QR Scan Button */}
-            <Link href="/employee/QrScan" onClick={handleLinkClick}>
-              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/employee/QrScan'])}`}>
-                <MdQrCodeScanner className='text-xl text-[#F5EEDD]' />
-                QR Scan
+            {/* Employee Management Button */}
+            <Link href="/admin/employee_management" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/employee_management'])}`}>
+                <MdPeople className='text-xl text-[#F5EEDD]' />
+                Employee Management
               </button>
             </Link>
 
-            {/* History Button */}
-            <Link href="/employee/History" onClick={handleLinkClick}>
-              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/employee/History'])}`}>
-                <MdHistory className='text-xl text-[#F5EEDD]' />
-                History
+            {/* Daily Attendance Button */}
+            <Link href="/admin/daily_attendance" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/daily_attendance'])}`}>
+                <MdCalendarToday className='text-xl text-[#F5EEDD]' />
+                Daily Attendance
+              </button>
+            </Link>
+
+            {/* Attendance Analysis Button */}
+            <Link href="/admin/attendance_analysis" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/attendance_analysis'])}`}>
+                <MdAnalytics className='text-xl text-[#F5EEDD]' />
+                Attendance Analysis
+              </button>
+            </Link>
+
+            {/* Holidays Button */}
+            <Link href="/admin/holidays" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/holidays'])}`}>
+                <MdCalendarToday className='text-xl text-[#F5EEDD]' />
+                Holidays
               </button>
             </Link>
 

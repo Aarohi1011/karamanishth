@@ -3,36 +3,36 @@ import mongoose from 'mongoose';
 const EmployeeSchema = new mongoose.Schema({
   // Basic Information
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, unique: true },
   phone: { type: String, required: true, unique: true },
-  address: { type: String, required: true },
-  
-  // Professional Information
-  position: { type: String, required: true },
-  department: { type: String, required: true },
-  experience: { type: String, required: true },
+  address: { type: String },
+  businessName : { type:String },
+  role: {
+    type: String,
+    enum: ['Owner' , 'Manager', 'Head', 'Staff']
+  },
+  experience: { type: String },
   bio: { type: String },
   skills: { type: [String], default: [] },
-  
+
   // Compensation
-  salary: { type: String, required: true },
-  
+  salary: { type: String },
+
   // System Access
-  password: { type: String, required: true },
-  role: { 
-    type: String, 
-    required: true, 
-    enum: ['Management', 'Head', 'Developer', 'Analyst', 'Staff'] 
+  password: {
+    type: String,
+    default: function () {
+      return this.phone;
+    }
   },
-  
+
+
   // Additional Details
-  
   joinDate: { type: Date, default: Date.now },
-  
+
   // Permissions
   permissions: { type: [String], default: [] },
-  
-  
+
   active: { type: Boolean, default: true },
   lastLogin: { type: Date }
 }, { timestamps: true });

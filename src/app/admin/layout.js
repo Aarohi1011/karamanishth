@@ -63,7 +63,7 @@ export default function DashboardLayout({ children }) {
 
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col h-full relative">
+          <div className="flex-1 flex flex-col h-full relative z-30">
             <Admin_Navbar
               toggleMobileSidebar={toggleMobileSidebar}
               toggleDesktopSidebar={toggleDesktopSidebar}
