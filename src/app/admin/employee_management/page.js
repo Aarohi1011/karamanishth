@@ -25,7 +25,7 @@ const EmployeeManagement = () => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('/api/employee/add_details');
+        const response = await fetch('/api/business/getemployee');
         if (!response.ok) {
           throw new Error('Failed to fetch employees');
         }
