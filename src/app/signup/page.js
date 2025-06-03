@@ -143,7 +143,7 @@ const GettingStarted = () => {
             </div>
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-[#F5EEDD]">
-            Let's Get Started
+            Lets Get Started
           </h2>
           <p className="mt-2 text-center text-sm text-[#A6CDC6]">
             Set up your business account in just 3 simple steps
@@ -464,7 +464,7 @@ const GettingStarted = () => {
                         className="focus:ring-[#7AE2CF] h-4 w-4 text-[#077A7D] border-[#A6CDC6] rounded"
                       />
                       <label htmlFor="skipEmployees" className="ml-3 text-sm text-[#16404D]">
-                        I don't have employees to add right now
+                        I dont have employees to add right now
                       </label>
                     </div>
                     <p className="mt-2 text-xs text-[#077A7D]">
