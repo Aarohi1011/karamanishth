@@ -1,10 +1,31 @@
 'use client'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiUsers, FiCalendar, FiAward, FiCheckCircle, FiXCircle, FiPlus } from 'react-icons/fi'
 import Link from 'next/link'
+import { auth } from '../lib/auth'
+
 const AdminDashboard = () => {
   const router = useRouter()
+
+  useEffect(() => {
+   const getUserData = async () => {
+      try {
+        const userData = await auth();
+        if (userData === 'No Token') {
+          router.push('/login');
+        } else {
+         console.log(userData);
+         
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setIsLoading(false);
+      }
+    };
+    getUserData();
+  }, [])
+  
 
   // Sample data - in a real app, this would come from an API
   const stats = {

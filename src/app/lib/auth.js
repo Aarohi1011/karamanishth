@@ -18,10 +18,15 @@ export const auth = async()=>{
             return error_message;
         }
         const value = token.value
+        console.log("value" , value);
+        
         const decoded = jwt.verify(value, process.env.ACCESS_TOKEN_SECRET);
+        console.log("Decode",decoded);
+        
         // console.log('This is the decoding log',decoded);
         
-        const user  = decoded._doc; 
+        // const user  = decoded._doc; 
+        const user  = decoded; 
         // console.log('I am logging the detail of the user from the auth',user);
         
         return user;
