@@ -1,25 +1,67 @@
 'use client'
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('pathshala');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Particle animation for hero section
+  const particles = Array.from({ length: 30 }).map((_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 4 + 2,
+    duration: Math.random() * 15 + 10,
+    delay: Math.random() * 5
+  }));
+
+  // Mouse trail effect
+  const cursorX = useMotionValue(-100);
+  const cursorY = useMotionValue(-100);
+  const cursorXSpring = useSpring(cursorX, { stiffness: 500, damping: 28 });
+  const cursorYSpring = useSpring(cursorY, { stiffness: 500, damping: 28 });
+  const cursorScale = useMotionValue(1);
+  const cursorRotate = useTransform(
+    cursorXSpring, 
+    [0, typeof window !== 'undefined' ? window.innerWidth : 0], 
+    [-15, 15]
+  );
+
+  // Text hover effect
+  const [hoveredText, setHoveredText] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50);
     };
+    
+    const handleMouseMove = (e) => {
+      cursorX.set(e.clientX - 16);
+      cursorY.set(e.clientY - 16);
+    };
+    
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    // Simulate loading completion
+    const timer = setTimeout(() => setIsLoading(false), 2500);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+      clearTimeout(timer);
+    };
   }, []);
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const handleMouseEnter = () => cursorScale.set(1.5);
+  const handleMouseLeave = () => cursorScale.set(1);
 
   const navLinks = [
     { name: 'Products', href: '#products' },
@@ -84,6 +126,34 @@ export default function Home() {
     }
   ];
 
+  // Animated text component
+  const AnimatedText = ({ text, className = '', hoverColor = '#7AE2CF' }) => {
+    return (
+      <span 
+        className={`relative inline-block ${className}`}
+        onMouseEnter={() => setHoveredText(text)}
+        onMouseLeave={() => setHoveredText(null)}
+      >
+        {text.split('').map((char, i) => (
+          <motion.span
+            key={i}
+            className="inline-block"
+            animate={{
+              y: hoveredText === text ? [0, -5, 0] : 0,
+              color: hoveredText === text ? ['#06202B', hoverColor, '#06202B'] : '#06202B'
+            }}
+            transition={{
+              duration: 0.6,
+              delay: i * 0.02
+            }}
+          >
+            {char === ' ' ? '\u00A0' : char}
+          </motion.span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#F5EEDD]">
       <Head>
@@ -92,25 +162,86 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      {/* Custom cursor */}
+      <motion.div
+        className="fixed w-8 h-8 bg-[#00b4d8] rounded-full pointer-events-none z-50 mix-blend-difference"
+        style={{
+          translateX: cursorXSpring,
+          translateY: cursorYSpring,
+          scale: cursorScale,
+          rotate: cursorRotate
+        }}
+      />
+
+      {/* Loading animation */}
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8 }}
+            className="fixed inset-0 bg-[#06202B] z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ 
+                scale: [0.8, 1.1, 1],
+                opacity: 1,
+                rotate: [0, 10, -5, 0]
+              }}
+              transition={{ 
+                duration: 1.5,
+                repeat: Infinity,
+                repeatType: "mirror"
+              }}
+              className="text-white text-4xl font-bold flex flex-col items-center"
+            >
+              <motion.div
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.8, 1, 0.8]
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity
+                }}
+                className="mb-6"
+              >
+                <svg className="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+              </motion.div>
+              <AnimatedText text="Loading..." className="text-white" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Navigation */}
       <motion.nav 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.5 }}
-        className={`fixed w-full z-50 ${scrolled ? 'bg-[#06202B]/95 backdrop-blur-sm py-2 shadow-xl' : 'bg-[#06202B] py-4'} text-[#FBF5DD] transition-all duration-300`}
+        transition={{ duration: 0.5, type: 'spring' }}
+        className={`fixed w-full z-40 ${scrolled ? 'bg-[#06202B]/95 backdrop-blur-sm py-2 shadow-xl' : 'bg-[#06202B] py-4'} text-[#FBF5DD] transition-all duration-300`}
       >
         <div className="container mx-auto px-6">
           <div className="flex justify-between items-center">
             <motion.div 
               whileHover={{ scale: 1.05 }}
               className="text-2xl font-bold flex items-center"
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
-              <span className="bg-[#077A7D] p-1 rounded mr-2">
+              <motion.span 
+                className="bg-[#077A7D] p-1 rounded mr-2"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.8 }}
+              >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                 </svg>
-              </span>
-              Sharma Industry
+              </motion.span>
+              <AnimatedText text="Sharma Industry" hoverColor="#7AE2CF" />
             </motion.div>
             
             <div className="hidden md:flex space-x-8">
@@ -118,11 +249,18 @@ export default function Home() {
                 <motion.a 
                   key={index}
                   href={link.href}
-                  className="relative group hover:text-[#7AE2CF] transition"
+                  className="relative group"
                   whileHover={{ scale: 1.05 }}
+                  onMouseEnter={handleMouseEnter}
+                  onMouseLeave={handleMouseLeave}
                 >
-                  {link.name}
-                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#7AE2CF] transition-all duration-300 group-hover:w-full"></span>
+                  <AnimatedText text={link.name} hoverColor="#7AE2CF" />
+                  <motion.span 
+                    className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#7AE2CF]"
+                    initial={{ width: 0 }}
+                    whileHover={{ width: '100%' }}
+                    transition={{ duration: 0.3 }}
+                  />
                 </motion.a>
               ))}
             </div>
@@ -131,6 +269,8 @@ export default function Home() {
               className="md:hidden focus:outline-none"
               onClick={toggleMenu}
               whileTap={{ scale: 0.9 }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
@@ -171,17 +311,17 @@ export default function Home() {
 
       {/* Hero Section */}
       <header className="relative bg-gradient-to-r from-[#06202B] to-[#16404D] text-[#FBF5DD] pt-32 pb-20 overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden opacity-20">
-          {[...Array(20)].map((_, i) => (
+        {/* Animated particles */}
+        <div className="absolute inset-0 overflow-hidden">
+          {particles.map((particle) => (
             <motion.div
-              key={i}
+              key={particle.id}
               className="absolute rounded-full bg-[#7AE2CF]"
               style={{
-                width: Math.random() * 20 + 5,
-                height: Math.random() * 20 + 5,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                width: particle.size,
+                height: particle.size,
+                left: `${particle.x}%`,
+                top: `${particle.y}%`,
               }}
               animate={{
                 y: [0, Math.random() * 100 - 50],
@@ -189,7 +329,8 @@ export default function Home() {
                 opacity: [0.2, 0.8, 0.2],
               }}
               transition={{
-                duration: Math.random() * 10 + 10,
+                duration: particle.duration,
+                delay: particle.delay,
                 repeat: Infinity,
                 repeatType: 'reverse',
               }}
@@ -203,8 +344,14 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="text-4xl md:text-6xl font-bold mb-6"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
-            Innovative <span className="text-[#7AE2CF]">Software</span> Solutions
+            <AnimatedText text="Innovative " />
+            <span className="text-[#7AE2CF]">
+              <AnimatedText text="Software" hoverColor="#FBF5DD" />
+            </span>
+            <AnimatedText text=" Solutions" />
           </motion.h1>
           
           <motion.p 
@@ -227,11 +374,20 @@ export default function Home() {
               className="bg-[#077A7D] hover:bg-[#7AE2CF] text-white px-8 py-3 rounded-lg font-medium transition flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               Explore Products
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.svg 
+                className="w-5 h-5 ml-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                animate={{ y: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
+              </motion.svg>
             </motion.a>
             
             <motion.a 
@@ -239,11 +395,20 @@ export default function Home() {
               className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-8 py-3 rounded-lg font-medium transition flex items-center justify-center"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
             >
               Contact Us
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <motion.svg 
+                className="w-5 h-5 ml-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-              </svg>
+              </motion.svg>
             </motion.a>
           </motion.div>
         </div>
@@ -251,11 +416,14 @@ export default function Home() {
         {/* Decorative wave */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 120" className="w-full">
-            <path 
+            <motion.path 
               fill="#FBF5DD" 
               fillOpacity="1" 
               d="M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,85.3C672,75,768,85,864,106.7C960,128,1056,160,1152,160C1248,160,1344,128,1392,112L1440,96L1440,120L1392,120C1344,120,1248,120,1152,120C1056,120,960,120,864,120C768,120,672,120,576,120C480,120,384,120,288,120C192,120,96,120,48,120L0,120Z"
-            ></path>
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2 }}
+            />
           </svg>
         </div>
       </header>
@@ -264,8 +432,29 @@ export default function Home() {
       <section id="products" className="py-20 bg-[#FBF5DD] relative">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10 overflow-hidden">
-          <div className="absolute top-20 left-10 w-40 h-40 rounded-full bg-[#077A7D] filter blur-3xl"></div>
-          <div className="absolute bottom-10 right-10 w-60 h-60 rounded-full bg-[#DDA853] filter blur-3xl"></div>
+          <motion.div 
+            className="absolute top-20 left-10 w-40 h-40 rounded-full bg-[#077A7D] filter blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.2, 0.1]
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-10 right-10 w-60 h-60 rounded-full bg-[#DDA853] filter blur-3xl"
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.1, 0.15, 0.1]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              delay: 2
+            }}
+          />
         </div>
         
         <div className="container mx-auto px-6 relative z-10">
@@ -275,6 +464,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-center text-[#06202B] mb-12"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             Our <span className="text-[#077A7D]">Products</span>
           </motion.h2>
@@ -287,18 +478,22 @@ export default function Home() {
             className="flex justify-center mb-12"
           >
             <div className="inline-flex rounded-md shadow-sm overflow-hidden">
-              <button
+              <motion.button
                 onClick={() => setActiveTab('pathshala')}
                 className={`px-6 py-3 text-sm font-medium transition-all duration-300 ${activeTab === 'pathshala' ? 'bg-[#077A7D] text-white' : 'bg-[#A6CDC6] text-[#06202B] hover:bg-[#7AE2CF]'}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 Pathshala
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 onClick={() => setActiveTab('karmanishth')}
                 className={`px-6 py-3 text-sm font-medium transition-all duration-300 ${activeTab === 'karmanishth' ? 'bg-[#077A7D] text-white' : 'bg-[#A6CDC6] text-[#06202B] hover:bg-[#7AE2CF]'}`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 Karmanishth
-              </button>
+              </motion.button>
             </div>
           </motion.div>
 
@@ -311,44 +506,84 @@ export default function Home() {
               transition={{ duration: 0.4 }}
             >
               {activeTab === 'pathshala' ? (
-                <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
+                <motion.div 
+                  className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl"
+                  whileHover={{ y: -5 }}
+                >
                   <div className="md:flex">
                     <div className="md:w-1/2 p-8 md:p-12 bg-gradient-to-br from-[#077A7D] to-[#7AE2CF] text-white relative overflow-hidden">
                       {/* Decorative elements */}
-                      <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white/10"></div>
-                      <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/10"></div>
+                      <motion.div 
+                        className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white/10"
+                        animate={{
+                          x: [0, 20, 0],
+                          y: [0, 20, 0]
+                        }}
+                        transition={{
+                          duration: 15,
+                          repeat: Infinity
+                        }}
+                      />
+                      <motion.div 
+                        className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/10"
+                        animate={{
+                          x: [0, -20, 0],
+                          y: [0, -20, 0]
+                        }}
+                        transition={{
+                          duration: 20,
+                          repeat: Infinity,
+                          delay: 5
+                        }}
+                      />
                       
                       <h3 className="text-3xl font-bold mb-4 relative z-10">Pathshala</h3>
                       <p className="text-xl mb-6 relative z-10">Comprehensive School ERP Management System</p>
                       <ul className="space-y-3 relative z-10">
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Streamline attendance, lectures, and results</span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Automated scheduling and substitutions</span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Comprehensive analytics and reporting</span>
-                        </li>
+                        {[
+                          'Streamline attendance, lectures, and results',
+                          'Automated scheduling and substitutions',
+                          'Comprehensive analytics and reporting'
+                        ].map((item, index) => (
+                          <motion.li 
+                            key={index}
+                            className="flex items-start"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <motion.svg 
+                              className="w-5 h-5 mt-1 mr-2 flex-shrink-0" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                              whileHover={{ rotate: 360 }}
+                              transition={{ duration: 0.8 }}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </motion.svg>
+                            <span>{item}</span>
+                          </motion.li>
+                        ))}
                       </ul>
                       <motion.button 
                         className="mt-8 bg-white text-[#077A7D] hover:bg-[#FBF5DD] px-6 py-3 rounded-lg font-medium transition relative z-10 flex items-center"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
                       >
                         Learn More
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <motion.svg 
+                          className="w-4 h-4 ml-2" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        </motion.svg>
                       </motion.button>
                     </div>
                     <div className="md:w-1/2 p-8 md:p-12">
@@ -381,11 +616,14 @@ export default function Home() {
                             className="bg-[#F5EEDD] p-4 rounded-lg hover:shadow-md transition"
                             whileHover={{ y: -5 }}
                           >
-                            <div className="w-8 h-8 bg-[#077A7D]/10 rounded-full flex items-center justify-center mb-2">
+                            <motion.div 
+                              className="w-8 h-8 bg-[#077A7D]/10 rounded-full flex items-center justify-center mb-2"
+                              whileHover={{ scale: 1.2 }}
+                            >
                               <svg className="w-4 h-4 text-[#077A7D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                            </div>
+                            </motion.div>
                             <h5 className="font-bold text-[#077A7D] mb-2">{item.title}</h5>
                             <p className="text-sm text-[#16404D]">{item.description}</p>
                           </motion.div>
@@ -393,46 +631,85 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ) : (
-                <div className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl">
+                <motion.div 
+                  className="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-300 hover:shadow-2xl"
+                  whileHover={{ y: -5 }}
+                >
                   <div className="md:flex">
                     <div className="md:w-1/2 p-8 md:p-12 bg-gradient-to-br from-[#077A7D] to-[#7AE2CF] text-white relative overflow-hidden">
                       {/* Decorative elements */}
-                      <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white/10"></div>
-                      <div className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/10"></div>
+                      <motion.div 
+                        className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-white/10"
+                        animate={{
+                          rotate: 360,
+                        }}
+                        transition={{
+                          duration: 20,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
+                      <motion.div 
+                        className="absolute -bottom-20 -left-20 w-60 h-60 rounded-full bg-white/10"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.1, 0.2, 0.1]
+                        }}
+                        transition={{
+                          duration: 15,
+                          repeat: Infinity
+                        }}
+                      />
                       
                       <h3 className="text-3xl font-bold mb-4 relative z-10">Karmanishth</h3>
                       <p className="text-xl mb-6 relative z-10">Employee Management System for SMEs</p>
                       <ul className="space-y-3 relative z-10">
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Monitor employee punctuality and attendance</span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Real-time tracking of check-ins/check-outs</span>
-                        </li>
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 mt-1 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span>Centralized dashboard for business owners</span>
-                        </li>
+                        {[
+                          'Monitor employee punctuality and attendance',
+                          'Real-time tracking of check-ins/check-outs',
+                          'Centralized dashboard for business owners'
+                        ].map((item, index) => (
+                          <motion.li 
+                            key={index}
+                            className="flex items-start"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                          >
+                            <motion.svg 
+                              className="w-5 h-5 mt-1 mr-2 flex-shrink-0" 
+                              fill="none" 
+                              stroke="currentColor" 
+                              viewBox="0 0 24 24"
+                              whileHover={{ rotate: 360 }}
+                              transition={{ duration: 0.8 }}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </motion.svg>
+                            <span>{item}</span>
+                          </motion.li>
+                        ))}
                       </ul>
                       <motion.button 
                         className="mt-8 bg-white text-[#077A7D] hover:bg-[#FBF5DD] px-6 py-3 rounded-lg font-medium transition relative z-10 flex items-center"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        onMouseEnter={handleMouseEnter}
+                        onMouseLeave={handleMouseLeave}
                       >
                         Learn More
-                        <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <motion.svg 
+                          className="w-4 h-4 ml-2" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                          animate={{ x: [0, 5, 0] }}
+                          transition={{ duration: 1.5, repeat: Infinity }}
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
+                        </motion.svg>
                       </motion.button>
                     </div>
                     <div className="md:w-1/2 p-8 md:p-12">
@@ -465,11 +742,14 @@ export default function Home() {
                             className="bg-[#F5EEDD] p-4 rounded-lg hover:shadow-md transition"
                             whileHover={{ y: -5 }}
                           >
-                            <div className="w-8 h-8 bg-[#077A7D]/10 rounded-full flex items-center justify-center mb-2">
+                            <motion.div 
+                              className="w-8 h-8 bg-[#077A7D]/10 rounded-full flex items-center justify-center mb-2"
+                              whileHover={{ scale: 1.2 }}
+                            >
                               <svg className="w-4 h-4 text-[#077A7D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
-                            </div>
+                            </motion.div>
                             <h5 className="font-bold text-[#077A7D] mb-2">{item.title}</h5>
                             <p className="text-sm text-[#16404D]">{item.description}</p>
                           </motion.div>
@@ -477,7 +757,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )}
             </motion.div>
           </AnimatePresence>
@@ -488,8 +768,29 @@ export default function Home() {
       <section id="features" className="py-20 bg-white relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-60 h-60 rounded-full bg-[#7AE2CF] filter blur-3xl"></div>
-          <div className="absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full bg-[#DDA853] filter blur-3xl"></div>
+          <motion.div 
+            className="absolute top-1/4 left-1/4 w-60 h-60 rounded-full bg-[#7AE2CF] filter blur-3xl"
+            animate={{
+              x: [0, 50, 0],
+              y: [0, 30, 0]
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-1/3 right-1/3 w-80 h-80 rounded-full bg-[#DDA853] filter blur-3xl"
+            animate={{
+              x: [0, -40, 0],
+              y: [0, -20, 0]
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              delay: 10
+            }}
+          />
         </div>
         
         <div className="container mx-auto px-6 relative z-10">
@@ -499,6 +800,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-center text-[#06202B] mb-12"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             Advanced <span className="text-[#077A7D]">Features</span>
           </motion.h2>
@@ -513,13 +816,30 @@ export default function Home() {
                 viewport={{ once: true }}
                 className="bg-[#FBF5DD] p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300 relative overflow-hidden"
                 whileHover={{ y: -10 }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
                 {/* Decorative element */}
-                <div className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-[#077A7D]/10"></div>
+                <motion.div 
+                  className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-[#077A7D]/10"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.1, 0.2, 0.1]
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Infinity,
+                    delay: index * 2
+                  }}
+                />
                 
-                <div className="w-12 h-12 bg-[#077A7D] rounded-full flex items-center justify-center text-white mb-4 relative">
+                <motion.div 
+                  className="w-12 h-12 bg-[#077A7D] rounded-full flex items-center justify-center text-white mb-4 relative"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.8 }}
+                >
                   {feature.icon}
-                </div>
+                </motion.div>
                 <h3 className="text-xl font-bold text-[#06202B] mb-3 relative">{feature.title}</h3>
                 <p className="text-[#16404D] relative">{feature.description}</p>
               </motion.div>
@@ -545,8 +865,22 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 className="p-6"
+                whileHover={{ scale: 1.05 }}
               >
-                <div className="text-4xl font-bold mb-2">{stat.number}</div>
+                <motion.div 
+                  className="text-4xl font-bold mb-2"
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    textShadow: ["0 0 0px rgba(255,255,255,0)", "0 0 10px rgba(255,255,255,0.3)", "0 0 0px rgba(255,255,255,0)"]
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    delay: index * 0.5
+                  }}
+                >
+                  {stat.number}
+                </motion.div>
                 <div className="text-lg opacity-80">{stat.label}</div>
               </motion.div>
             ))}
@@ -563,6 +897,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-center text-[#06202B] mb-12"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             What Our <span className="text-[#077A7D]">Clients</span> Say
           </motion.h2>
@@ -592,6 +928,7 @@ export default function Home() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
                 className="bg-white p-8 rounded-xl shadow-md hover:shadow-xl transition-all duration-300"
+                whileHover={{ y: -5 }}
               >
                 <div className="text-[#16404D] mb-6">
                   <svg className="w-8 h-8 opacity-30" fill="currentColor" viewBox="0 0 24 24">
@@ -600,9 +937,12 @@ export default function Home() {
                 </div>
                 <p className="text-[#06202B] mb-6">{testimonial.quote}</p>
                 <div className="flex items-center">
-                  <div className="w-12 h-12 rounded-full bg-[#077A7D] flex items-center justify-center text-white font-bold mr-4">
+                  <motion.div 
+                    className="w-12 h-12 rounded-full bg-[#077A7D] flex items-center justify-center text-white font-bold mr-4"
+                    whileHover={{ scale: 1.1 }}
+                  >
                     {testimonial.name.charAt(0)}
-                  </div>
+                  </motion.div>
                   <div>
                     <div className="font-bold text-[#06202B]">{testimonial.name}</div>
                     <div className="text-sm text-[#077A7D]">{testimonial.role}</div>
@@ -618,8 +958,29 @@ export default function Home() {
       <section id="contact" className="py-20 bg-[#06202B] text-[#FBF5DD] relative overflow-hidden">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-full h-full opacity-10 overflow-hidden">
-          <div className="absolute top-20 right-20 w-60 h-60 rounded-full bg-[#7AE2CF] filter blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-[#DDA853] filter blur-3xl"></div>
+          <motion.div 
+            className="absolute top-20 right-20 w-60 h-60 rounded-full bg-[#7AE2CF] filter blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.1, 0.2, 0.1]
+            }}
+            transition={{
+              duration: 15,
+              repeat: Infinity
+            }}
+          />
+          <motion.div 
+            className="absolute bottom-20 left-20 w-80 h-80 rounded-full bg-[#DDA853] filter blur-3xl"
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.1, 0.15, 0.1]
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              delay: 5
+            }}
+          />
         </div>
         
         <div className="container mx-auto px-6 relative z-10">
@@ -629,6 +990,8 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
             className="text-3xl font-bold text-center mb-12"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
           >
             Get In <span className="text-[#7AE2CF]">Touch</span>
           </motion.h2>
@@ -645,15 +1008,39 @@ export default function Home() {
                 <h3 className="text-xl font-bold mb-4">Contact Information</h3>
                 <div className="space-y-4">
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 mt-1 mr-3 text-[#7AE2CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.svg 
+                      className="w-5 h-5 mt-1 mr-3 text-[#7AE2CF]" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      animate={{
+                        rotate: [0, 10, -10, 0]
+                      }}
+                      transition={{
+                        duration: 5,
+                        repeat: Infinity
+                      }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                    </motion.svg>
                     <span>contact@sharmaindustry.com</span>
                   </div>
                   <div className="flex items-start">
-                    <svg className="w-5 h-5 mt-1 mr-3 text-[#7AE2CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.svg 
+                      className="w-5 h-5 mt-1 mr-3 text-[#7AE2CF]" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      animate={{
+                        scale: [1, 1.1, 1]
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity
+                      }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                    </svg>
+                    </motion.svg>
                     <span>+91 XXXXX XXXXX</span>
                   </div>
                 </div>
@@ -662,12 +1049,21 @@ export default function Home() {
                   <h4 className="text-xl font-bold mb-4">Visit Us</h4>
                   <div className="bg-[#16404D] rounded-xl overflow-hidden h-48 relative">
                     {/* This would be replaced with an actual map component */}
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <motion.div 
+                      className="absolute inset-0 flex items-center justify-center"
+                      animate={{
+                        scale: [1, 1.05, 1]
+                      }}
+                      transition={{
+                        duration: 10,
+                        repeat: Infinity
+                      }}
+                    >
                       <svg className="w-16 h-16 text-[#7AE2CF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                    </div>
+                    </motion.div>
                   </div>
                 </div>
               </motion.div>
@@ -687,11 +1083,15 @@ export default function Home() {
                     viewport={{ once: true }}
                   >
                     <label htmlFor="name" className="block mb-1">Name</label>
-                    <input 
+                    <motion.input 
                       type="text" 
                       id="name" 
                       className="w-full px-4 py-3 rounded bg-[#16404D] border border-[#077A7D] focus:outline-none focus:ring-2 focus:ring-[#7AE2CF] transition" 
                       placeholder="Your name"
+                      whileFocus={{
+                        scale: 1.02,
+                        borderColor: "#7AE2CF"
+                      }}
                     />
                   </motion.div>
                   
@@ -702,11 +1102,15 @@ export default function Home() {
                     viewport={{ once: true }}
                   >
                     <label htmlFor="email" className="block mb-1">Email</label>
-                    <input 
+                    <motion.input 
                       type="email" 
                       id="email" 
                       className="w-full px-4 py-3 rounded bg-[#16404D] border border-[#077A7D] focus:outline-none focus:ring-2 focus:ring-[#7AE2CF] transition" 
                       placeholder="Your email"
+                      whileFocus={{
+                        scale: 1.02,
+                        borderColor: "#7AE2CF"
+                      }}
                     />
                   </motion.div>
                   
@@ -717,12 +1121,16 @@ export default function Home() {
                     viewport={{ once: true }}
                   >
                     <label htmlFor="message" className="block mb-1">Message</label>
-                    <textarea 
+                    <motion.textarea 
                       id="message" 
                       rows="4" 
                       className="w-full px-4 py-3 rounded bg-[#16404D] border border-[#077A7D] focus:outline-none focus:ring-2 focus:ring-[#7AE2CF] transition" 
                       placeholder="Your message"
-                    ></textarea>
+                      whileFocus={{
+                        scale: 1.02,
+                        borderColor: "#7AE2CF"
+                      }}
+                    />
                   </motion.div>
                   
                   <motion.button 
@@ -734,11 +1142,25 @@ export default function Home() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.4 }}
                     viewport={{ once: true }}
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
                   >
                     Send Message
-                    <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.svg 
+                      className="w-5 h-5 ml-2" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      animate={{
+                        x: [0, 5, 0]
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity
+                      }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
+                    </motion.svg>
                   </motion.button>
                 </form>
               </motion.div>
@@ -752,14 +1174,21 @@ export default function Home() {
         <div className="container mx-auto px-6">
           <div className="md:flex md:justify-between md:items-start">
             <div className="mb-8 md:mb-0">
-              <div className="text-xl font-bold text-[#FBF5DD] mb-2 flex items-center">
-                <span className="bg-[#077A7D] p-1 rounded mr-2">
+              <motion.div 
+                className="text-xl font-bold text-[#FBF5DD] mb-2 flex items-center"
+                whileHover={{ scale: 1.05 }}
+              >
+                <motion.span 
+                  className="bg-[#077A7D] p-1 rounded mr-2"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.8 }}
+                >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                   </svg>
-                </span>
+                </motion.span>
                 Sharma Industry
-              </div>
+              </motion.div>
               <p className="mt-2 max-w-xs">Innovative Software Solutions for education and business management</p>
             </div>
             
@@ -767,27 +1196,45 @@ export default function Home() {
               <div>
                 <h4 className="text-lg font-bold text-[#FBF5DD] mb-4">Products</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Pathshala</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Karmanishth</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Pricing</a></li>
+                  {['Pathshala', 'Karmanishth', 'Pricing'].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <a href="#" className="hover:text-[#7AE2CF] transition">{item}</a>
+                    </motion.li>
+                  ))}
                 </ul>
               </div>
               
               <div>
                 <h4 className="text-lg font-bold text-[#FBF5DD] mb-4">Company</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">About Us</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Careers</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Blog</a></li>
+                  {['About Us', 'Careers', 'Blog'].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <a href="#" className="hover:text-[#7AE2CF] transition">{item}</a>
+                    </motion.li>
+                  ))}
                 </ul>
               </div>
               
               <div>
                 <h4 className="text-lg font-bold text-[#FBF5DD] mb-4">Support</h4>
                 <ul className="space-y-2">
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Help Center</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Documentation</a></li>
-                  <li><a href="#" className="hover:text-[#7AE2CF] transition">Contact</a></li>
+                  {['Help Center', 'Documentation', 'Contact'].map((item, index) => (
+                    <motion.li 
+                      key={index}
+                      whileHover={{ x: 5 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <a href="#" className="hover:text-[#7AE2CF] transition">{item}</a>
+                    </motion.li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -804,7 +1251,8 @@ export default function Home() {
                   key={index}
                   href={link.href}
                   className="hover:text-[#7AE2CF] transition"
-                  whileHover={{ y: -3 }}
+                  whileHover={{ y: -3, scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   {link.icon}
                 </motion.a>
