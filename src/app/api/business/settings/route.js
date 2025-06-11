@@ -83,14 +83,15 @@ export async function GET(req) {
         const settings = await BusinessSettings.findOne({ 
             business: businessId 
         }).populate('business', 'businessName businessType');
-
+        console.log(settings);
+        
         if (!settings) {
             // Return default settings structure if none exists
             return NextResponse.json({
                 success: true,
                 msg: 'No custom settings found, returning defaults',
                 data: {
-                    business: businessId,
+                    businessId: businessId,
                     defaultInTime: '09:00',
                     defaultOutTime: '18:00',
                     workingDays: [1, 2, 3, 4, 5],

@@ -1,7 +1,9 @@
-// pages/settings.js
+'use client'
+
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import Head from 'next/head';
+import { auth } from '@/app/lib/auth';
 
 const dayMap = {
   0: 'Sunday',
@@ -15,12 +17,41 @@ const dayMap = {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { businessId } = router.query;
+  const [businessId, setBusinessId] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState({
+    defaultInTime: '09:00',
+    defaultOutTime: '18:00',
+    gracePeriodMinutes: 15,
+    lunchStartTime: '13:00',
+    lunchDurationMinutes: 60,
+    workingDays: [1, 2, 3, 4, 5], // Default to Mon-Fri
+    weeklyHoliday: [0, 6] // Default to Sun, Sat
+  });
+
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const userData = await auth();
+        if (userData === 'No Token') {
+          router.push('/login');
+        } else {
+          setBusinessId(userData.businessId);
+          setFormData(prev => ({
+            ...prev,
+            businessId: userData._id
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setLoading(false);
+      }
+    };
+    getUserData();
+  }, []);
 
   useEffect(() => {
     if (!businessId) return;
@@ -30,10 +61,16 @@ export default function SettingsPage() {
         setLoading(true);
         const response = await fetch(`/api/business/settings/?businessId=${businessId}`);
         const data = await response.json();
-        
+        console.log("Fetched settings data:", data);
+
         if (data.success) {
           setSettings(data.data);
-          setFormData(data.data);
+          setFormData(prev => ({
+            ...prev,
+            ...data.data,
+            workingDays: Array.isArray(data.data.workingDays) ? data.data.workingDays : [],
+            weeklyHoliday: Array.isArray(data.data.weeklyHoliday) ? data.data.weeklyHoliday : []
+          }));
         } else {
           setError(data.msg || 'Failed to load settings');
         }
@@ -60,7 +97,7 @@ export default function SettingsPage() {
     setFormData(prev => {
       const workingDays = prev.workingDays ? [...prev.workingDays] : [];
       const weeklyHoliday = prev.weeklyHoliday ? [...prev.weeklyHoliday] : [];
-      
+
       if (workingDays.includes(day)) {
         return {
           ...prev,
@@ -79,19 +116,43 @@ export default function SettingsPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
       setLoading(true);
-      const response = await fetch(`/api/business/settings/?businessId=${businessId}`, {
+      const payload = {
+        businessId: businessId,
+        settingsData: {
+          defaultInTime: formData.defaultInTime,
+          defaultOutTime: formData.defaultOutTime,
+          gracePeriodMinutes: formData.gracePeriodMinutes,
+          lunchStartTime: formData.lunchStartTime,
+          lunchDurationMinutes: formData.lunchDurationMinutes,
+          workingDays: formData.workingDays || [],
+          weeklyHoliday: formData.weeklyHoliday || []
+        }
+      };
+      console.log(payload);
+      
+      const response = await fetch(`/api/business/settings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
-      
+
       const data = await response.json();
+      console.log(data);
+
+      
       if (data.success) {
         setSettings(data.data);
+        setFormData(prev => ({
+          ...prev,
+          ...data.data,
+          workingDays: data.data.workingDays || [],
+          weeklyHoliday: data.data.weeklyHoliday || []
+        }));
         setIsEditing(false);
       } else {
         setError(data.msg || 'Failed to update settings');
@@ -118,7 +179,7 @@ export default function SettingsPage() {
         <div className="bg-[#F5EEDD] p-6 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-bold text-[#06202B] mb-4">Error</h2>
           <p className="text-[#16404D]">{error}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 bg-[#DDA853] hover:bg-[#c09547] text-white font-bold py-2 px-4 rounded transition-colors"
           >
@@ -225,27 +286,25 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#16404D] mb-3">
-                  Working Days
-                </label>
+                <h3 className="text-sm font-medium text-[#16404D] mb-3">Working Days</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
                   {Object.entries(dayMap).map(([dayNum, dayName]) => {
                     const day = parseInt(dayNum);
                     const isWorkingDay = formData.workingDays?.includes(day);
                     return (
-                      <div key={day} className="flex flex-col items-center">
+                      <div 
+                        key={day} 
+                        className="flex flex-col items-center cursor-pointer"
+                        onClick={() => handleDayToggle(day)}
+                      >
                         <span className="text-xs text-[#16404D] mb-1">{dayName.slice(0, 3)}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleDayToggle(day)}
-                          className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                            isWorkingDay
-                              ? 'bg-[#077A7D] text-white'
-                              : 'bg-[#F5EEDD] text-[#16404D] border border-[#7AE2CF]'
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            isWorkingDay ? 'bg-[#7AE2CF]' : 'bg-[#F5EEDD] border border-[#A6CDC6]'
                           }`}
                         >
                           {day}
-                        </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -312,8 +371,7 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-3 sm:grid-cols-7 gap-2">
                   {Object.entries(dayMap).map(([dayNum, dayName]) => {
                     const day = parseInt(dayNum);
-                    const isWorkingDay = settings?.workingDays?.includes(day) || 
-                                      (day >= 1 && day <= 5); // Default to Mon-Fri
+                    const isWorkingDay = settings?.workingDays?.includes(day);
                     return (
                       <div key={day} className="flex flex-col items-center">
                         <span className="text-xs text-[#16404D] mb-1">{dayName.slice(0, 3)}</span>

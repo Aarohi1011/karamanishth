@@ -19,7 +19,10 @@ export async function POST(req, res) {
         console.log(businessDetail);
         const expiryDate = businessDetail.subscription.expiryDate;
         console.log("Hey I am the expiry date", expiryDate);
-
+        // employee.businessId = businessDetail._id;
+        // await employee.save();  // save the updated employee
+        // console.log("Updated employee with businessId:", businessDetail._id);
+        // console.log("Updateded employee businessId:", employee.businessId);
         // const business = await Business.findOne({  });
 
         if (!employee) {
@@ -28,7 +31,7 @@ export async function POST(req, res) {
                 msg: 'user with this email does not exist!'
             }, { status: 400 });
         }
-        console.log(employee);
+        console.log("This is the employee",employee);
         console.log(password);
 
         // Direct comparison since password is not encrypted
@@ -42,8 +45,11 @@ export async function POST(req, res) {
         console.log("I am logging ");
         const employeeWithExpiry = {
             ...employee.toObject(),
-            expiryDate
+            expiryDate,
+             businessId: businessDetail._id 
         };
+        console.log(employeeWithExpiry);
+         
         const token = await CreateSession(employeeWithExpiry);
         console.log("Hey I am logging the token", token);
 
