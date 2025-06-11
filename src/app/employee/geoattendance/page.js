@@ -101,7 +101,7 @@ export default function MarkAttendance() {
 
       {distance !== null && (
         <p className="distance-info">
-          You're {Math.round(distance)} meters from the required location.
+          Youre {Math.round(distance)} meters from the required location.
         </p>
       )}
 
