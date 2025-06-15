@@ -34,7 +34,9 @@ const EmployeeSchema = new mongoose.Schema({
   permissions: { type: [String], default: [] },
 
   active: { type: Boolean, default: true },
-  lastLogin: { type: Date }
+  lastLogin: { type: Date },
+  subscription: { type: Object },
+
 }, { timestamps: true });
 
 export const Employee = mongoose.models.Employee || mongoose.model('Employee', EmployeeSchema);

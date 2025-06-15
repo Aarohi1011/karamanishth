@@ -4,9 +4,11 @@ import { FiHome, FiClock, FiCalendar, FiDownload, FiLogOut, FiUserCheck, FiUserX
 import { auth } from '../lib/auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import NotificationManager from '@/components/notificationmanager';
 const EmployeeDashboard = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [userid, setUserid] = useState('');
   useEffect(() => {
     const getUserData = async () => {
       try {
@@ -15,7 +17,7 @@ const EmployeeDashboard = () => {
         if (userData === 'No Token') {
           router.push('/login');
         } else {
-          
+          setUserid(userData._id)
           setIsLoading(false);
         }
       } catch (error) {
@@ -74,7 +76,7 @@ const EmployeeDashboard = () => {
                   {employeeStatus.isInShop ? <FiUserCheck size={24} /> : <FiUserX size={24} />}
                 </div>
               </div>
-
+              <NotificationManager userId={userid} />
               {employeeStatus.isInShop ? (
                 <>
                   <div className="flex items-center mb-2">
