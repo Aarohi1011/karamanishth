@@ -20,7 +20,18 @@ export async function POST(req) {
       try {
         await webPush.sendNotification(emp.subscription, JSON.stringify({
           title,
-          body: message
+          body: message,
+          icon: 'https://cdn.corenexis.com/i/d/ju16/5nLvsN.png?token=5eeb75d88f36638a48375f7517bf7cfb', // Add an icon path
+          badge: 'https://cdn.corenexis.com/i/d/ju16/e5c0Pg.png?token=5eeb75d88f36638a48375f7517bf7cfb', // Add a badge path
+          actions: [
+            { action: 'accept', title: '✅ Manjuri' },
+            { action: 'reject', title: '❌ Reject' }
+          ],
+          data: {
+            acceptUrl: "https://pathshala.sharmaindustry.in",
+            rejectUrl: "https://pathshala.sharmaindustry.in",
+            defaultUrl: "https://pathshala.sharmaindustry.in"
+          }
         }));
       } catch (err) {
         console.error("Push error:", err);

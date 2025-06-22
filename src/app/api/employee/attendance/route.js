@@ -3,11 +3,21 @@ import connectDB from "@/app/lib/dbconnect";
 import { Employee } from "@/app/models/employee";
 import { DailyAttendance } from "@/app/models/dailyAttendance";
 import { Holiday } from "@/app/models/holiday";
+import { auth } from "@/app/lib/auth";
 
 export async function POST(req) {
     try {
         await connectDB();
-        const { employeeId, businessId, inTime, outTime, deviceInfo } = await req.json();
+        // const { employeeId, businessId, inTime, outTime, deviceInfo } = await req.json();
+        const { token, inTime, outTime, deviceInfo } = await req.json();
+        const user = await auth();
+        console.log(deviceInfo);
+
+        console.log(user);
+        // const businessId = user.businessId;
+        const businessId = token;
+        const employeeId = user._id;
+        console.log(businessId, employeeId);
 
         // Validate required fields
         if (!employeeId || !businessId) {
@@ -27,8 +37,19 @@ export async function POST(req) {
         }
 
         // Get current date at midnight for consistent date comparison
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istMidnight = new Date(utc + istOffset);
+
+        const today = new Date(
+            Date.UTC(
+                istMidnight.getUTCFullYear(),
+                istMidnight.getUTCMonth(),
+                istMidnight.getUTCDate(),
+                0, 0, 0, 0
+            )
+        );
 
         // Check if today is a holiday
         const isHoliday = await Holiday.findOne({
@@ -47,22 +68,23 @@ export async function POST(req) {
         const dayOfWeek = today.getDay();
         const isWeeklyHoliday = await Holiday.findOne({
             business: businessId,
-            isWeeklyHoliday: true,
             $or: [
-                { recurrencePattern: 'weekly' },
-                { 
+                {
+                    isWeeklyHoliday: true,
+                    recurrencePattern: 'weekly'
+                },
+                {
                     recurrencePattern: 'yearly',
-                    date: { 
-                        $expr: { 
-                            $and: [
-                                { $eq: [{ $month: "$date" }, today.getMonth() + 1] },
-                                { $eq: [{ $dayOfMonth: "$date" }, today.getDate()] }
-                            ]
-                        }
+                    $expr: {
+                        $and: [
+                            { $eq: [{ $month: "$date" }, today.getMonth() + 1] },
+                            { $eq: [{ $dayOfMonth: "$date" }, today.getDate()] }
+                        ]
                     }
                 }
             ]
         });
+
 
         if (isWeeklyHoliday) {
             return NextResponse.json({
@@ -80,9 +102,9 @@ export async function POST(req) {
         if (!attendanceRecord) {
             // If no record exists (first employee marking attendance today)
             // Create new record and mark all other employees as absent
-            const allEmployees = await Employee.find({ 
+            const allEmployees = await Employee.find({
                 businessName: employee.businessName,
-                active: true 
+                active: true
             });
 
             const attendanceEntries = allEmployees.map(emp => ({
@@ -116,15 +138,14 @@ export async function POST(req) {
                 });
             } else {
                 // Update existing entry
+                // Update existing entry
                 const updateFields = {};
                 if (inTime) updateFields['employees.$[elem].inTime'] = inTime;
                 if (outTime) updateFields['employees.$[elem].outTime'] = outTime;
                 if (deviceInfo) updateFields['employees.$[elem].deviceInfo'] = deviceInfo;
-                
-                // Update status based on what's being updated
-                if (outTime) {
-                    updateFields['employees.$[elem].status'] = 'Present';
-                }
+
+                // Always mark status as 'Present' when updating
+                updateFields['employees.$[elem].status'] = 'Present';
 
                 await DailyAttendance.updateOne(
                     {
@@ -138,11 +159,20 @@ export async function POST(req) {
                         arrayFilters: [{ "elem.employee": employeeId }]
                     }
                 );
+
             }
         }
 
+        // Recalculate totals
+        const totalPresent = attendanceRecord.employees.filter(emp => emp.status === 'Present').length;
+        const totalAbsent = attendanceRecord.employees.filter(emp => emp.status === 'Absent').length;
+
+        attendanceRecord.totalPresent = totalPresent;
+        attendanceRecord.totalAbsent = totalAbsent;
+
         // Save the attendance record
         await attendanceRecord.save();
+
 
         return NextResponse.json({
             success: true,
@@ -165,7 +195,16 @@ export async function GET(req) {
     try {
         await connectDB();
         const { searchParams } = new URL(req.url);
+        const employeeId = searchParams.get('employeeId');
         const businessId = searchParams.get('businessId');
+
+        // Validate required parameters
+        if (!employeeId) {
+            return NextResponse.json({
+                success: false,
+                msg: 'Employee ID is required'
+            }, { status: 400 });
+        }
 
         if (!businessId) {
             return NextResponse.json({
@@ -173,83 +212,77 @@ export async function GET(req) {
                 msg: 'Business ID is required'
             }, { status: 400 });
         }
+        // Get today's date at midnight IST
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const istOffset = 5.5 * 60 * 60 * 1000;
+        const istMidnight = new Date(utc + istOffset);
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const today = new Date(
+            Date.UTC(
+                istMidnight.getUTCFullYear(),
+                istMidnight.getUTCMonth(),
+                istMidnight.getUTCDate(),
+                0, 0, 0, 0
+            )
+        );
 
-        // Check if today is a holiday
-        const isHoliday = await Holiday.findOne({
-            business: businessId,
-            date: today
-        });
+        // Optional debug
+        console.log("IST Midnight (in UTC):", today); // This is correct
 
-        if (isHoliday) {
-            return NextResponse.json({
-                success: true,
-                msg: `Today is a holiday (${isHoliday.name})`,
-                isHoliday: true,
-                holidayName: isHoliday.name,
-                holidayDescription: isHoliday.description,
-                data: null
-            }, { status: 200 });
-        }
 
-        // Check if today is a weekly holiday
-        const dayOfWeek = today.getDay();
-        const isWeeklyHoliday = await Holiday.findOne({
-            business: businessId,
-            isWeeklyHoliday: true,
-            $or: [
-                { recurrencePattern: 'weekly' },
-                { 
-                    recurrencePattern: 'yearly',
-                    date: { 
-                        $expr: { 
-                            $and: [
-                                { $eq: [{ $month: "$date" }, today.getMonth() + 1] },
-                                { $eq: [{ $dayOfMonth: "$date" }, today.getDate()] }
-                            ]
-                        }
-                    }
-                }
-            ]
-        });
 
-        if (isWeeklyHoliday) {
-            return NextResponse.json({
-                success: true,
-                msg: `Today is a weekly holiday (${isWeeklyHoliday.name})`,
-                isHoliday: true,
-                holidayName: isWeeklyHoliday.name,
-                holidayDescription: isWeeklyHoliday.description,
-                data: null
-            }, { status: 200 });
-        }
-
+        // Find today's attendance record for the business
         const attendanceRecord = await DailyAttendance.findOne({
             date: today,
-            business: businessId
-        }).populate('employees.employee', 'name role');
+            business: businessId,
+            'employees.employee': employeeId
+        }).populate('employees.employee', 'name email role department');
 
         if (!attendanceRecord) {
             return NextResponse.json({
                 success: true,
-                msg: 'No attendance recorded today',
+                msg: 'No attendance recorded for today',
                 data: null
             }, { status: 200 });
         }
 
+        // Extract the specific employee's attendance from the records
+        const employeeAttendance = attendanceRecord.employees.find(
+            emp => emp.employee._id.toString() === employeeId
+        );
+
+        if (!employeeAttendance) {
+            return NextResponse.json({
+                success: true,
+                msg: 'No attendance found for this employee today',
+                data: null
+            }, { status: 200 });
+        }
+
+        // Format the response data
+        const responseData = {
+            date: attendanceRecord.date,
+            inTime: employeeAttendance.inTime,
+            outTime: employeeAttendance.outTime,
+            status: employeeAttendance.status,
+            workHours: employeeAttendance.workHours,
+            notes: employeeAttendance.notes,
+            deviceInfo: employeeAttendance.deviceInfo,
+            employee: employeeAttendance.employee
+        };
+
         return NextResponse.json({
             success: true,
-            msg: 'Attendance retrieved successfully',
-            data: attendanceRecord
+            msg: 'Employee attendance retrieved successfully',
+            data: responseData
         }, { status: 200 });
 
     } catch (error) {
-        console.error('Error fetching attendance:', error);
+        console.error('Error fetching employee attendance:', error);
         return NextResponse.json({
             success: false,
-            msg: 'Error fetching attendance',
+            msg: 'Error fetching employee attendance',
             error: error.message
         }, { status: 500 });
     }
