@@ -1,6 +1,5 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import {
@@ -362,7 +361,6 @@ const HolidayCalendar = ({ dailyStats }) => {
 };
 
 export default function MonthlyAttendancePage() {
-  const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
