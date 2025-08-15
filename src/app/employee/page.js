@@ -372,7 +372,7 @@ const EmployeeDashboard = () => {
                           {isAttendanceLoading ? 'Processing...' : 'Check Out'}
                         </button>
                       ) : (
-                        <p className="text-sm text-[#16404D] italic">You've completed your work for today</p>
+                        <p className="text-sm text-[#16404D] italic">You have completed your work for today</p>
                       )}
                     </>
                   ) : (
