@@ -200,7 +200,7 @@ const AdminDashboard = () => {
                 <div className="p-3 rounded-full bg-[#DDA853]/10">
                   <FiCheckCircle className="text-[#DDA853] text-2xl" />
                 </div>
-                <span className="text-sm font-medium text-[#16404D]">Today's Attendance</span>
+                <span className="text-sm font-medium text-[#16404D]">Todays Attendance</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <StatItem value={stats.presentToday} label="Present" color="text-green-500" />
@@ -291,7 +291,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-[#DDA853]">Daily Attendance</h3>
-                  <p className="text-[#16404D] mt-1">View today's records</p>
+                  <p className="text-[#16404D] mt-1">View todays records</p>
                 </div>
               </div>
             </div>

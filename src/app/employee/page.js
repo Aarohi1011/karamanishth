@@ -467,7 +467,7 @@ const EmployeeDashboard = () => {
 
             {/* Today's Attendance */}
             <div className="bg-[#FBF5DD] rounded-2xl shadow-lg overflow-hidden border border-[#DDA853]/20 p-6 mb-8">
-              <h2 className="text-xl font-semibold text-[#06202B] mb-4">Today's Attendance</h2>
+              <h2 className="text-xl font-semibold text-[#06202B] mb-4">Todays Attendance</h2>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
