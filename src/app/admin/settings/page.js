@@ -22,14 +22,21 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [formData, setFormData] = useState({
+    coordinates: {
+      latitude: 0,
+      longitude: 0
+    },
+    radiusMeters: 100,
     defaultInTime: '09:00',
     defaultOutTime: '18:00',
     gracePeriodMinutes: 15,
     lunchStartTime: '13:00',
     lunchDurationMinutes: 60,
     workingDays: [1, 2, 3, 4, 5], // Default to Mon-Fri
-    weeklyHoliday: [0, 6] // Default to Sun, Sat
+    weeklyHoliday: [0] // Default to Sun
   });
 
   useEffect(() => {
@@ -68,8 +75,10 @@ export default function SettingsPage() {
           setFormData(prev => ({
             ...prev,
             ...data.data,
-            workingDays: Array.isArray(data.data.workingDays) ? data.data.workingDays : [],
-            weeklyHoliday: Array.isArray(data.data.weeklyHoliday) ? data.data.weeklyHoliday : []
+            workingDays: Array.isArray(data.data.workingDays) ? data.data.workingDays : [1, 2, 3, 4, 5],
+            weeklyHoliday: Array.isArray(data.data.weeklyHoliday) ? data.data.weeklyHoliday : [0],
+            coordinates: data.data.coordinates || { latitude: 0, longitude: 0 },
+            radiusMeters: data.data.radiusMeters || 100
           }));
         } else {
           setError(data.msg || 'Failed to load settings');
@@ -89,7 +98,18 @@ export default function SettingsPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name.includes('Minutes') ? parseInt(value) || 0 : value
+      [name]: name.includes('Minutes') || name === 'radiusMeters' ? parseInt(value) || 0 : value
+    }));
+  };
+
+  const handleCoordinateChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      coordinates: {
+        ...prev.coordinates,
+        [name]: parseFloat(value) || 0
+      }
     }));
   };
 
@@ -102,16 +122,44 @@ export default function SettingsPage() {
         return {
           ...prev,
           workingDays: workingDays.filter(d => d !== day),
-          weeklyHoliday: [...weeklyHoliday, day]
+          weeklyHoliday: [...weeklyHoliday, day].sort((a, b) => a - b)
         };
       } else {
         return {
           ...prev,
-          workingDays: [...workingDays, day],
+          workingDays: [...workingDays, day].sort((a, b) => a - b),
           weeklyHoliday: weeklyHoliday.filter(d => d !== day)
         };
       }
     });
+  };
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setIsGettingLocation(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          coordinates: {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          }
+        }));
+        setIsGettingLocation(false);
+      },
+      (error) => {
+        setLocationError(`Unable to retrieve your location: ${error.message}`);
+        setIsGettingLocation(false);
+      },
+      { enableHighAccuracy: true }
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -122,6 +170,8 @@ export default function SettingsPage() {
       const payload = {
         businessId: businessId,
         settingsData: {
+          coordinates: formData.coordinates,
+          radiusMeters: formData.radiusMeters,
           defaultInTime: formData.defaultInTime,
           defaultOutTime: formData.defaultOutTime,
           gracePeriodMinutes: formData.gracePeriodMinutes,
@@ -144,14 +194,15 @@ export default function SettingsPage() {
       const data = await response.json();
       console.log(data);
 
-      
       if (data.success) {
         setSettings(data.data);
         setFormData(prev => ({
           ...prev,
           ...data.data,
-          workingDays: data.data.workingDays || [],
-          weeklyHoliday: data.data.weeklyHoliday || []
+          workingDays: data.data.workingDays || [1, 2, 3, 4, 5],
+          weeklyHoliday: data.data.weeklyHoliday || [0],
+          coordinates: data.data.coordinates || { latitude: 0, longitude: 0 },
+          radiusMeters: data.data.radiusMeters || 100
         }));
         setIsEditing(false);
       } else {
@@ -212,12 +263,81 @@ export default function SettingsPage() {
         <div className="bg-[#F5EEDD] rounded-lg shadow-lg overflow-hidden">
           <div className="p-4 bg-[#A6CDC6] border-b border-[#7AE2CF]">
             <h2 className="text-xl font-semibold text-[#16404D]">
-              Business Hours Configuration
+              Business Settings
             </h2>
           </div>
 
           {isEditing ? (
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-[#16404D]">Business Location</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-[#16404D] mb-1">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      name="latitude"
+                      min="-90"
+                      max="90"
+                      step="any"
+                      value={formData.coordinates?.latitude || 0}
+                      onChange={handleCoordinateChange}
+                      className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-[#16404D] mb-1">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      name="longitude"
+                      min="-180"
+                      max="180"
+                      step="any"
+                      value={formData.coordinates?.longitude || 0}
+                      onChange={handleCoordinateChange}
+                      className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={getCurrentLocation}
+                      disabled={isGettingLocation}
+                      className="w-full px-4 py-2 bg-[#077A7D] text-white rounded hover:bg-[#06696c] transition-colors disabled:opacity-50"
+                    >
+                      {isGettingLocation ? 'Getting Location...' : 'Use Current Location'}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#16404D] mb-1">
+                    Allowed Check-in Radius (meters)
+                  </label>
+                  <input
+                    type="number"
+                    name="radiusMeters"
+                    min="1"
+                    max="50000"
+                    value={formData.radiusMeters || 100}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Must be between 1 and 50,000 meters</p>
+                </div>
+
+                {locationError && (
+                  <p className="text-sm text-red-600">{locationError}</p>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-[#16404D] mb-1">
@@ -252,7 +372,7 @@ export default function SettingsPage() {
                   <input
                     type="number"
                     name="gracePeriodMinutes"
-                    value={formData.gracePeriodMinutes || 0}
+                    value={formData.gracePeriodMinutes || 15}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
                   />
@@ -278,7 +398,7 @@ export default function SettingsPage() {
                   <input
                     type="number"
                     name="lunchDurationMinutes"
-                    value={formData.lunchDurationMinutes || 0}
+                    value={formData.lunchDurationMinutes || 60}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
                   />
@@ -329,6 +449,30 @@ export default function SettingsPage() {
             </form>
           ) : (
             <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-sm font-medium text-[#16404D]">Business Location</h3>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-[#16404D]">Latitude</p>
+                    <p className="text-lg font-semibold text-[#06202B]">
+                      {settings?.coordinates?.latitude?.toFixed(6) || 'Not set'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#16404D]">Longitude</p>
+                    <p className="text-lg font-semibold text-[#06202B]">
+                      {settings?.coordinates?.longitude?.toFixed(6) || 'Not set'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[#16404D]">Allowed Check-in Radius</p>
+                    <p className="text-lg font-semibold text-[#06202B]">
+                      {settings?.radiusMeters || 100} meters
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-[#16404D]">Default In Time</h3>

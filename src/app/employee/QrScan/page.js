@@ -1,63 +1,127 @@
 'use client';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiClock, FiCalendar, FiCheck, FiX, FiRefreshCw, FiVideo, FiVideoOff, FiLogIn, FiLogOut } from 'react-icons/fi';
-import QrScanner from 'qr-scanner';
+import { FiUser, FiClock, FiCalendar, FiCheck, FiX, FiRefreshCw, FiLogIn, FiLogOut, FiMapPin } from 'react-icons/fi';
 import { auth } from '@/app/lib/auth';
 
 const EmployeeAttendancePage = () => {
-    const [scanResult, setScanResult] = useState('');
     const [loading, setLoading] = useState(false);
-    const [isScanning, setIsScanning] = useState(false);
-    const [isResultReady, setIsResultReady] = useState(false);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(() => {
+        const options = { timeZone: "Asia/Kolkata" };
+        const formatter = new Intl.DateTimeFormat("en-CA", options); // YYYY-MM-DD format
+        return formatter.format(new Date());
+    });
+
     const [attendanceStatus, setAttendanceStatus] = useState(null);
     const [toast, setToast] = useState(null);
-    const [cameras, setCameras] = useState([]);
-    const [selectedCamera, setSelectedCamera] = useState(null);
-    const [attendanceType, setAttendanceType] = useState('in'); // 'in' or 'out'
+    const [attendanceType, setAttendanceType] = useState('in');
     const [employeeAttendance, setEmployeeAttendance] = useState(null);
-    const videoRef = useRef(null);
-    const qrScannerRef = useRef(null);
+    const [businessSettings, setBusinessSettings] = useState(null);
+    const [locationStatus, setLocationStatus] = useState(null);
+    const [isCheckingLocation, setIsCheckingLocation] = useState(false);
+    const [currentLocation, setCurrentLocation] = useState(null);
+    const [holidayInfo, setHolidayInfo] = useState(null);
 
-    // Update the fetchEmployeeAttendance function to be reusable
-    const fetchEmployeeAttendance = async () => {
+    // Calculate distance between two coordinates in meters
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    };
+
+    // Check if current location is within business radius
+    const checkLocation = useCallback(async (position) => {
+        if (!businessSettings) return false;
+
+        const { latitude, longitude } = position.coords;
+        setCurrentLocation({ latitude, longitude });
+
+        const distance = calculateDistance(
+            latitude,
+            longitude,
+            businessSettings.coordinates.latitude,
+            businessSettings.coordinates.longitude
+        );
+
+        return distance <= businessSettings.radiusMeters;
+    }, [businessSettings]);
+
+    // Fetch business settings
+    const fetchBusinessSettings = async (businessId) => {
+        try {
+            const response = await fetch(`/api/business/settings/?businessId=${businessId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setBusinessSettings(data.data);
+                return data.data;
+            } else {
+                throw new Error(data.msg || 'Failed to load business settings');
+            }
+        } catch (error) {
+            console.error('Error fetching business settings:', error);
+            showToast('Failed to load business settings', 'error');
+            return null;
+        }
+    };
+
+    // Fetch employee attendance
+    const fetchEmployeeAttendance = useCallback(async () => {
         try {
             setLoading(true);
             const userData = await auth();
             const id = userData._id;
             const businessId = userData.businessId;
+
+            // Fetch business settings if not already loaded
+            if (!businessSettings) {
+                await fetchBusinessSettings(businessId);
+            }
+
             const response = await fetch(`/api/employee/attendance?employeeId=${id}&businessId=${businessId}`);
 
             if (response.ok) {
                 const data = await response.json();
                 if (data.data) {
-                    console.log(data.data);
-                    
                     // Format the time for display
                     const formatTime = (dateString) => {
                         if (!dateString) return null;
-                        const date = new Date(dateString);
-                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        return new Date(dateString).toLocaleTimeString("en-IN", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                            timeZone: "Asia/Kolkata"
+                        });
                     };
 
-                    // Set attendance status based on API response
+                    // Set attendance status with new fields
                     setAttendanceStatus({
                         inTime: formatTime(data.data.inTime),
                         outTime: formatTime(data.data.outTime),
-                        status: data.data.status
+                        inStatus: data.data.inStatus,
+                        outStatus: data.data.outStatus,
+                        workHours: data.data.workHours,
+                        employee: data.data.employee
                     });
 
                     // Determine which button to show
                     if (data.data.inTime && !data.data.outTime) {
                         setAttendanceType('out');
                     } else if (data.data.inTime && data.data.outTime) {
-                        setAttendanceType(null); // Attendance completed
+                        setAttendanceType(null);
                     } else {
-                        setAttendanceType('in'); // No attendance marked yet
+                        setAttendanceType('in');
                     }
                 } else {
-                    // No attendance data found
                     setAttendanceStatus(null);
                     setAttendanceType('in');
                 }
@@ -72,101 +136,13 @@ const EmployeeAttendancePage = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [businessSettings]);
 
-    // Use useEffect to fetch attendance data
     useEffect(() => {
         fetchEmployeeAttendance();
-    }, []);
+    }, [fetchEmployeeAttendance]);
 
-    const handleScan = useCallback((result) => {
-        if (result) {
-            setScanResult(result.data);
-            setIsResultReady(true);
-            // Don't stop scanner here - let the confirmation modal handle it
-        }
-    }, []);
-
-    const handleError = useCallback((err) => {
-        if (isScanning) {
-            showToast('Error scanning QR code. Please try again.', 'error');
-        }
-    }, [isScanning]);
-
-    const startScanner = async (cameraId = null) => {
-        if (videoRef.current) {
-            stopScanner();
-
-            try {
-                qrScannerRef.current = new QrScanner(
-                    videoRef.current,
-                    handleScan,
-                    {
-                        preferredCamera: cameraId || undefined,
-                        highlightScanRegion: true,
-                        highlightCodeOutline: true,
-                        onDecodeError: handleError,
-                        maxScansPerSecond: 2
-                    }
-                );
-
-                await qrScannerRef.current.start();
-
-                if (cameras.length === 0) {
-                    const availableCameras = await QrScanner.listCameras(true);
-                    setCameras(availableCameras);
-
-                    if (availableCameras.length > 0) {
-                        setSelectedCamera(availableCameras[0].id);
-                    }
-                }
-            } catch (err) {
-                showToast('Failed to access camera. Please check permissions.', 'error');
-                setIsScanning(false);
-            }
-        }
-    };
-
-    const stopScanner = () => {
-        if (qrScannerRef.current) {
-            qrScannerRef.current.stop();
-            qrScannerRef.current.destroy();
-            qrScannerRef.current = null;
-        }
-    };
-
-    const switchCamera = async (cameraId) => {
-        setSelectedCamera(cameraId);
-        if (isScanning) {
-            await startScanner(cameraId);
-        }
-    };
-
-    useEffect(() => {
-        if (isScanning) {
-            startScanner(selectedCamera);
-        }
-
-        return () => {
-            if (!isResultReady) {
-                stopScanner();
-            }
-        };
-    }, [isScanning, selectedCamera]);
-
-    const showToast = (message, type) => {
-        const newToast = {
-            id: Date.now(),
-            message,
-            type
-        };
-        setToast(newToast);
-
-        setTimeout(() => {
-            setToast(null);
-        }, 3000);
-    };
-
+    // Get device info
     const getDeviceInfo = () => {
         const userAgent = navigator.userAgent;
         let deviceInfo = "Unknown Device";
@@ -175,8 +151,6 @@ const EmployeeAttendancePage = () => {
             deviceInfo = "iPhone";
             if (/iPhone\s+(\d+)/.test(userAgent)) {
                 deviceInfo = `iPhone ${userAgent.match(/iPhone\s+(\d+)/)[1]}`;
-            } else if (/iPhone/.test(userAgent)) {
-                deviceInfo = "iPhone";
             }
         } else if (/iPad/.test(userAgent)) {
             deviceInfo = "iPad";
@@ -193,24 +167,57 @@ const EmployeeAttendancePage = () => {
 
         return deviceInfo;
     };
-    const sendTokenToApi = useCallback(async (token) => {
-        setLoading(true);
-        const deviceInfo = getDeviceInfo();
+
+    // Mark attendance
+    const markAttendance = useCallback(async () => {
+        if (!businessSettings) {
+            showToast('Business settings not loaded', 'error');
+            return;
+        }
+
+        setIsCheckingLocation(true);
+        setLocationStatus('Checking your location...');
+
         try {
-            // Prepare the request data
+            // Get current position
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            });
+
+            // Check if location is within radius
+            const isWithinRadius = await checkLocation(position);
+
+            if (!isWithinRadius) {
+                setLocationStatus('You are not within the business premises');
+                showToast('You must be within the business premises to mark attendance', 'error');
+                return;
+            }
+
+            setLoading(true);
+            setLocationStatus('Location verified. Marking attendance...');
+
+            const deviceInfo = getDeviceInfo();
+            const userData = await auth();
+            const businessId = userData.businessId;
+
+            // Prepare request data
             const requestData = {
-                token,
-                date: new Date().toISOString(),
+                businessId: userData.businessId,
                 deviceInfo
             };
 
-            // Only add inTime or outTime based on attendanceType
+            // Add inTime or outTime based on attendanceType
             if (attendanceType === 'in') {
                 requestData.inTime = new Date().toISOString();
             } else {
                 requestData.outTime = new Date().toISOString();
             }
 
+            // Send request to API
             const response = await fetch('/api/employee/attendance', {
                 method: 'POST',
                 headers: {
@@ -221,39 +228,60 @@ const EmployeeAttendancePage = () => {
 
             if (response.ok) {
                 const data = await response.json();
-                showToast(`Attendance ${attendanceType === 'in' ? 'in' : 'out'} time marked successfully!`, 'success');
-
-                // Immediately fetch the updated attendance data
-                await fetchEmployeeAttendance();
-
-                // Reset scan states
-                setScanResult('');
-                setIsResultReady(false);
-
-                // Determine whether to keep scanner open
-                if (attendanceType === 'in') {
-                    // Keep scanner open for out time
-                    setIsScanning(false);
+                if (data.msg && data.msg.includes('holiday')) {
+                    setHolidayInfo(data.msg);
+                    showToast(data.msg, 'error');
                 } else {
-                    // Close scanner after out time
-                    setIsScanning(false);
+                    showToast(`Attendance ${attendanceType === 'in' ? 'in' : 'out'} time marked successfully!`, 'success');
+                    await fetchEmployeeAttendance();
                 }
             } else {
                 const errorData = await response.json();
-                showToast(errorData.msg || 'Failed to verify token.', 'error');
-                // Keep scanner open on error
-                setIsScanning(true);
-                setIsResultReady(false);
+                throw new Error(errorData.msg || 'Failed to mark attendance');
             }
         } catch (error) {
-            showToast('An error occurred while submitting the token.', 'error');
-            // Keep scanner open on error
-            setIsScanning(true);
-            setIsResultReady(false);
+            console.error('Error marking attendance:', error);
+            showToast(error.message || 'Failed to mark attendance', 'error');
         } finally {
             setLoading(false);
+            setIsCheckingLocation(false);
+            setLocationStatus(null);
         }
-    }, [attendanceType, fetchEmployeeAttendance]); // Add fetchEmployeeAttendance to dependencies
+    }, [attendanceType, businessSettings, checkLocation, fetchEmployeeAttendance]);
+
+    // Show toast notification
+    const showToast = (message, type) => {
+        const newToast = {
+            id: Date.now(),
+            message,
+            type
+        };
+        setToast(newToast);
+
+        setTimeout(() => {
+            setToast(null);
+        }, 3000);
+    };
+
+    // Get status badge color
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'On Time':
+                return 'bg-green-100 text-green-800';
+            case 'Late':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'Early Leave':
+                return 'bg-orange-100 text-orange-800';
+            case 'Absent':
+                return 'bg-red-100 text-red-800';
+            case 'Half-Day':
+                return 'bg-blue-100 text-blue-800';
+            case 'Leave':
+                return 'bg-purple-100 text-purple-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#06202B] to-[#16404D] p-4 md:p-8">
@@ -287,7 +315,7 @@ const EmployeeAttendancePage = () => {
                 {/* Header */}
                 <div className="bg-gradient-to-r from-[#077A7D] to-[#16404D] p-6 text-[#F5EEDD] text-center">
                     <h1 className="text-2xl font-bold">Employee Attendance</h1>
-                    <p className="text-[#A6CDC6] mt-1">Mark your daily attendance</p>
+                    <p className="text-[#A6CDC6] mt-1">Mark your attendance using location</p>
                 </div>
 
                 {/* Main Content */}
@@ -304,6 +332,13 @@ const EmployeeAttendancePage = () => {
                             })}</span>
                         </div>
                     </div>
+
+                    {/* Holiday Notice */}
+                    {holidayInfo && (
+                        <div className="mb-4 p-3 bg-purple-100 text-purple-800 rounded-lg text-center">
+                            <p className="font-medium">{holidayInfo}</p>
+                        </div>
+                    )}
 
                     {/* Loading State */}
                     {loading && !attendanceStatus && (
@@ -339,30 +374,49 @@ const EmployeeAttendancePage = () => {
                                     <span className="text-[#16404D]">
                                         In Time: {attendanceStatus.inTime || '--:--'}
                                     </span>
+                                    {attendanceStatus.inStatus && (
+                                        <span className={`ml-2 text-xs px-2 py-1 rounded-full ${getStatusColor(attendanceStatus.inStatus)}`}>
+                                            {attendanceStatus.inStatus}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center justify-center">
                                     <FiLogOut className="mr-2 text-[#077A7D]" />
                                     <span className="text-[#16404D]">
                                         Out Time: {attendanceStatus.outTime || '--:--'}
                                     </span>
+                                    {attendanceStatus.outStatus && (
+                                        <span className={`ml-2 text-xs px-2 py-1 rounded-full ${getStatusColor(attendanceStatus.outStatus)}`}>
+                                            {attendanceStatus.outStatus}
+                                        </span>
+                                    )}
                                 </div>
+                                {attendanceStatus.workHours > 0 && (
+                                    <div className="flex items-center justify-center">
+                                        <FiClock className="mr-2 text-[#077A7D]" />
+                                        <span className="text-[#16404D]">
+                                            Work Hours: {attendanceStatus.workHours} hrs
+                                        </span>
+                                    </div>
+                                )}
                             </div>
-
-                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${attendanceStatus.outTime
-                                ? 'bg-[#7AE2CF]/30 text-[#16404D]'
-                                : 'bg-[#DDA853]/30 text-[#16404D]'
-                                }`}>
-                                {attendanceStatus.status}
-                            </span>
 
                             {!attendanceStatus.outTime && attendanceType === 'out' && (
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => setIsScanning(true)}
-                                    className="mt-4 px-6 py-2 bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] font-medium rounded-lg shadow-md flex items-center mx-auto"
+                                    onClick={markAttendance}
+                                    disabled={loading || isCheckingLocation}
+                                    className="mt-4 px-6 py-2 bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] font-medium rounded-lg shadow-md flex items-center mx-auto disabled:opacity-50"
                                 >
-                                    Mark Out Time
+                                    {isCheckingLocation ? (
+                                        <span className="flex items-center">
+                                            <FiRefreshCw className="animate-spin mr-2" />
+                                            Verifying Location...
+                                        </span>
+                                    ) : (
+                                        'Mark Out Time'
+                                    )}
                                 </motion.button>
                             )}
                         </motion.div>
@@ -376,158 +430,65 @@ const EmployeeAttendancePage = () => {
                                 <FiUser className="w-8 h-8 text-[#077A7D]" />
                             </div>
                             <h3 className="text-lg font-semibold text-[#16404D] mb-2">Mark Your Attendance</h3>
-                            <p className="text-[#077A7D] mb-4">Scan your QR code to register your arrival time</p>
+                            <p className="text-[#077A7D] mb-4">Use your location to register your attendance</p>
 
-                            {attendanceType === 'in' && (
+                            {attendanceType === 'in' && !holidayInfo && (
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    onClick={() => setIsScanning(true)}
-                                    className="px-6 py-3 bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] font-medium rounded-lg shadow-md flex items-center mx-auto"
+                                    onClick={markAttendance}
+                                    disabled={loading || isCheckingLocation}
+                                    className="px-6 py-3 bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] font-medium rounded-lg shadow-md flex items-center mx-auto disabled:opacity-50"
                                 >
-                                    Scan QR Code
+                                    {isCheckingLocation ? (
+                                        <span className="flex items-center">
+                                            <FiRefreshCw className="animate-spin mr-2" />
+                                            Verifying Location...
+                                        </span>
+                                    ) : (
+                                        <span className="flex items-center">
+                                            <FiMapPin className="mr-2" />
+                                            Mark In Time
+                                        </span>
+                                    )}
                                 </motion.button>
                             )}
                         </motion.div>
                     )}
 
-                    {/* QR Scanner Modal */}
-                    <AnimatePresence>
-                        {isScanning && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-                            >
-                                <motion.div
-                                    className="bg-[#FBF5DD] rounded-xl shadow-xl w-full max-w-md overflow-hidden"
-                                    initial={{ scale: 0.9 }}
-                                    animate={{ scale: 1 }}
-                                >
-                                    {/* Scanner Header */}
-                                    <div className="bg-gradient-to-r from-[#077A7D] to-[#16404D] text-[#F5EEDD] p-4 flex justify-between items-center">
-                                        <h3 className="text-xl font-semibold">
-                                            {attendanceType === 'in' ? 'Mark In Time' : 'Mark Out Time'}
-                                        </h3>
-                                        <button
-                                            onClick={() => setIsScanning(false)}
-                                            className="text-[#F5EEDD] hover:text-[#7AE2CF] p-2"
-                                        >
-                                            <FiX className="w-6 h-6" />
-                                        </button>
-                                    </div>
+                    {/* Location Status */}
+                    {locationStatus && (
+                        <div className="mt-4 p-3 bg-[#F5EEDD] border border-[#A6CDC6] rounded-lg text-center">
+                            <p className="text-[#16404D] flex items-center justify-center">
+                                <FiMapPin className="mr-2 text-[#077A7D]" />
+                                {locationStatus}
+                            </p>
+                        </div>
+                    )}
 
-                                    {/* Scanner Content */}
-                                    <div className="p-4">
-                                        <div className="relative aspect-square bg-black rounded-lg overflow-hidden">
-                                            <video
-                                                ref={videoRef}
-                                                className="w-full h-full object-cover"
-                                            />
-
-                                            {/* Scanner Frame Overlay */}
-                                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                <div className="border-4 border-[#7AE2CF]/50 rounded-xl w-64 h-64 relative">
-                                                    <div className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 border-[#7AE2CF]"></div>
-                                                    <div className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 border-[#7AE2CF]"></div>
-                                                    <div className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 border-[#7AE2CF]"></div>
-                                                    <div className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 border-[#7AE2CF]"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Camera Selection Dropdown */}
-                                        {cameras.length > 0 && (
-                                            <div className="mt-4 bg-[#F5EEDD] border border-[#A6CDC6] text-[#16404D] px-4 py-2 rounded-lg font-medium">
-                                                <div className="flex items-center mb-2">
-                                                    <FiVideo className="mr-2 text-[#077A7D]" />
-                                                    <span>Select Camera:</span>
-                                                </div>
-                                                <select
-                                                    value={selectedCamera || ''}
-                                                    onChange={(e) => switchCamera(e.target.value)}
-                                                    className="w-full bg-white border border-[#A6CDC6] rounded px-3 py-1 text-[#16404D]"
-                                                >
-                                                    {cameras.map((camera) => (
-                                                        <option key={camera.id} value={camera.id}>
-                                                            {camera.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        )}
-
-                                        <div className="mt-4 text-center text-[#16404D]">
-                                            <p>Position your QR code within the frame</p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-
-                    {/* Confirmation Modal */}
-                    <AnimatePresence>
-                        {isResultReady && (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-                            >
-                                <motion.div
-                                    className="bg-[#FBF5DD] rounded-xl shadow-xl w-full max-w-sm"
-                                    initial={{ y: 20 }}
-                                    animate={{ y: 0 }}
-                                >
-                                    <div className="p-6 text-center">
-                                        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-[#7AE2CF]/30 mb-4">
-                                            {attendanceType === 'in' ? (
-                                                <FiLogIn className="h-6 w-6 text-[#077A7D]" />
-                                            ) : (
-                                                <FiLogOut className="h-6 w-6 text-[#077A7D]" />
-                                            )}
-                                        </div>
-                                        <h3 className="text-lg font-medium text-[#16404D] mb-2">
-                                            Confirm {attendanceType === 'in' ? 'In Time' : 'Out Time'}
-                                        </h3>
-                                        <p className="text-[#077A7D] mb-6">
-                                            Are you sure you want to mark your {attendanceType === 'in' ? 'arrival' : 'departure'} time now?
-                                        </p>
-                                        <div className="flex justify-center space-x-4">
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => setIsResultReady(false)}
-                                                className="px-6 py-2 border border-[#A6CDC6] rounded-md text-[#16404D] bg-[#F5EEDD] hover:bg-[#A6CDC6]/20"
-                                            >
-                                                Cancel
-                                            </motion.button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={() => sendTokenToApi(scanResult)}
-                                                className="px-6 py-2 border border-transparent rounded-md shadow-sm text-[#F5EEDD] bg-gradient-to-r from-[#077A7D] to-[#16404D] hover:from-[#16404D] hover:to-[#077A7D]"
-                                            >
-                                                {loading ? (
-                                                    <span className="flex items-center">
-                                                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                        </svg>
-                                                        Processing...
-                                                    </span>
-                                                ) : (
-                                                    `Confirm ${attendanceType === 'in' ? 'In Time' : 'Out Time'}`
-                                                )}
-                                            </motion.button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    {/* Current Location Display */}
+                    {currentLocation && (
+                        <div className="mt-4 p-3 bg-[#F5EEDD] border border-[#A6CDC6] rounded-lg">
+                            <p className="text-sm text-[#16404D]">
+                                <span className="font-medium">Your Location:</span>
+                                <br />
+                                Lat: {currentLocation.latitude.toFixed(6)}
+                                <br />
+                                Lng: {currentLocation.longitude.toFixed(6)}
+                            </p>
+                            {businessSettings?.coordinates && (
+                                <p className="text-sm text-[#16404D] mt-2">
+                                    <span className="font-medium">Business Location:</span>
+                                    <br />
+                                    Lat: {businessSettings.coordinates.latitude.toFixed(6)}
+                                    <br />
+                                    Lng: {businessSettings.coordinates.longitude.toFixed(6)}
+                                    <br />
+                                    Radius: {businessSettings.radiusMeters} meters
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
             </motion.div>
         </div>

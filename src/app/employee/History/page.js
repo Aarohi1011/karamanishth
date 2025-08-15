@@ -1,14 +1,12 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { FiCalendar, FiClock, FiCheckCircle, FiXCircle, FiTrendingUp, FiFilter, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
-import { Bar, Line } from 'react-chartjs-2';
+import { FiCalendar, FiClock, FiCheckCircle, FiXCircle, FiTrendingUp, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend,
@@ -21,8 +19,6 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  LineElement,
-  PointElement,
   Title,
   Tooltip,
   Legend
@@ -30,22 +26,20 @@ ChartJS.register(
 
 const HistoryPage = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('monthly');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [userId, setUserId] = useState('');
   const [businessId, setBusinessId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [attendanceData, setAttendanceData] = useState({
-    monthly: {
-      label: '',
-      totalPresent: 0,
-      totalAbsent: 0,
-      totalLate: 0,
-      averageWorkHours: 0,
-      records: []
-    },
-    pastMonths: []
+    monthLabel: '',
+    totalDays: 0,
+    totalPresent: 0,
+    totalAbsent: 0,
+    totalLate: 0,
+    totalEarlyLeave: 0,
+    averageWorkHours: 0,
+    records: []
   });
 
   useEffect(() => {
@@ -72,19 +66,23 @@ const HistoryPage = () => {
   useEffect(() => {
     if (!userId || !businessId) return;
 
-    const fetchAttendanceData = async () => {
+    const fetchAttendanceByMonth = async (month, year) => {
       try {
         setIsLoading(true);
-        const response = await fetch(
-          `/api/employee/attendance/history?employeeId=${userId}&businessId=${businessId}&month=${selectedMonth + 1}&year=${selectedYear}`
-        );
+
+        const monthParam = `${year}-${String(month).padStart(2, '0')}`;
+
+        const url = new URL('/api/employee/attendance/history', window.location.origin);
+        url.searchParams.append('employeeId', userId);
+        url.searchParams.append('businessId', businessId);
+        url.searchParams.append('month', monthParam);
+
+        const response = await fetch(url);
         const data = await response.json();
-        
-        if (data.success) {
-          setAttendanceData(data.data);
-        } else {
-          throw new Error(data.msg || 'Failed to fetch attendance data');
-        }
+
+        if (!data.success) throw new Error(data.msg || 'Failed to fetch attendance data');
+
+        setAttendanceData(data.data);
       } catch (error) {
         console.error('Error fetching attendance data:', error);
         toast.error(error.message);
@@ -93,44 +91,39 @@ const HistoryPage = () => {
       }
     };
 
-    fetchAttendanceData();
+    fetchAttendanceByMonth(selectedMonth + 1, selectedYear);
   }, [userId, businessId, selectedMonth, selectedYear]);
 
-  // Format data for charts
+  const getDayStatus = (record) => {
+    if (record.inStatus === 'Absent' && record.outStatus === 'Absent') {
+      return 'Absent';
+    }
+    if (record.inStatus === 'Leave' || record.outStatus === 'Leave') {
+      return 'Leave';
+    }
+    if (record.inStatus === 'Half-Day' || record.outStatus === 'Half-Day') {
+      return 'Half-Day';
+    }
+    if (record.inStatus === 'Late') {
+      return 'Late';
+    }
+    if (record.outStatus === 'Early Leave') {
+      return 'Early Leave';
+    }
+    return 'Present';
+  };
+
   const monthlyChartData = {
-    labels: attendanceData.monthly.records.map(record => 
+    labels: attendanceData.records.map(record => 
       new Date(record.date).getDate()
     ),
     datasets: [
       {
         label: 'Working Hours',
-        data: attendanceData.monthly.records.map(record => record.workHours),
+        data: attendanceData.records.map(record => record.workHours),
         backgroundColor: '#077A7D',
         borderColor: '#16404D',
         borderWidth: 1,
-      }
-    ]
-  };
-
-  const pastMonthsChartData = {
-    labels: attendanceData.pastMonths.map(month => month.label.split(' ')[0]),
-    datasets: [
-      {
-        label: 'Present Days',
-        data: attendanceData.pastMonths.map(month => month.totalPresent),
-        backgroundColor: '#077A7D',
-        borderColor: '#16404D',
-        borderWidth: 2,
-        tension: 0.1,
-        fill: true
-      },
-      {
-        label: 'Late Days',
-        data: attendanceData.pastMonths.map(month => month.totalLate),
-        backgroundColor: '#DDA853',
-        borderColor: '#16404D',
-        borderWidth: 2,
-        tension: 0.1
       }
     ]
   };
@@ -175,7 +168,9 @@ const HistoryPage = () => {
       Present: 'bg-[#7AE2CF] text-[#16404D]',
       Absent: 'bg-[#F5EEDD] text-[#DDA853] border border-[#DDA853]',
       Late: 'bg-[#DDA853]/20 text-[#DDA853]',
-      'Half-day': 'bg-[#A6CDC6] text-[#16404D]'
+      'Early Leave': 'bg-[#DDA853]/30 text-[#DDA853]',
+      'Half-Day': 'bg-[#A6CDC6] text-[#16404D]',
+      Leave: 'bg-[#F5EEDD] text-[#16404D] border border-[#16404D]'
     };
     return styles[status] || '';
   };
@@ -185,7 +180,9 @@ const HistoryPage = () => {
       Present: <FiCheckCircle className="mr-1" />,
       Absent: <FiXCircle className="mr-1" />,
       Late: <FiClock className="mr-1" />,
-      'Half-day': <FiTrendingUp className="mr-1" />
+      'Early Leave': <FiClock className="mr-1" />,
+      'Half-Day': <FiTrendingUp className="mr-1" />,
+      Leave: <FiXCircle className="mr-1" />
     };
     return icons[status] || null;
   };
@@ -219,27 +216,11 @@ const HistoryPage = () => {
         {/* Header */}
         <div className="mb-6 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-[#F5EEDD] mb-1">Attendance History</h1>
-          <p className="text-sm md:text-base text-[#A6CDC6]">Track your attendance records and patterns</p>
+          <p className="text-sm md:text-base text-[#A6CDC6]">Track your monthly attendance records</p>
         </div>
 
         {/* Main Content */}
         <div className="bg-[#FBF5DD] rounded-xl shadow-lg overflow-hidden">
-          {/* Tabs */}
-          <div className="flex border-b border-[#A6CDC6]">
-            <button
-              onClick={() => setActiveTab('monthly')}
-              className={`flex-1 py-3 text-sm md:text-base font-medium text-center transition-colors ${activeTab === 'monthly' ? 'text-[#077A7D] border-b-2 border-[#077A7D]' : 'text-[#16404D] hover:bg-[#F5EEDD]'}`}
-            >
-              Monthly View
-            </button>
-            <button
-              onClick={() => setActiveTab('pastMonths')}
-              className={`flex-1 py-3 text-sm md:text-base font-medium text-center transition-colors ${activeTab === 'pastMonths' ? 'text-[#077A7D] border-b-2 border-[#077A7D]' : 'text-[#16404D] hover:bg-[#F5EEDD]'}`}
-            >
-              Past Months
-            </button>
-          </div>
-
           {/* Month Selector */}
           <div className="p-3 border-b border-[#A6CDC6] flex items-center justify-between bg-[#F5EEDD]">
             <button 
@@ -256,7 +237,7 @@ const HistoryPage = () => {
             <div className="flex items-center">
               <FiCalendar className="text-[#077A7D] mr-2" />
               <span className="text-sm md:text-base font-medium text-[#16404D]">
-                {attendanceData.monthly.label || 
+                {attendanceData.monthLabel || 
                   new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long', year: 'numeric' })}
               </span>
             </div>
@@ -275,54 +256,55 @@ const HistoryPage = () => {
 
           {/* Content Area */}
           <div className="p-4 md:p-6">
-            {activeTab === 'monthly' ? (
-              <div className="space-y-6">
-                {/* Stats Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
-                    <div className="text-xs text-[#077A7D]">Present</div>
-                    <div className="text-xl font-bold text-[#16404D]">
-                      {attendanceData.monthly.totalPresent}
-                    </div>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
-                    <div className="text-xs text-[#DDA853]">Late</div>
-                    <div className="text-xl font-bold text-[#16404D]">
-                      {attendanceData.monthly.totalLate}
-                    </div>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
-                    <div className="text-xs text-[#16404D]">Absent</div>
-                    <div className="text-xl font-bold text-[#16404D]">
-                      {attendanceData.monthly.totalAbsent}
-                    </div>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
-                    <div className="text-xs text-[#077A7D]">Avg. Hours</div>
-                    <div className="text-xl font-bold text-[#16404D]">
-                      {attendanceData.monthly.averageWorkHours.toFixed(1)}
-                    </div>
+            <div className="space-y-6">
+              {/* Stats Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
+                  <div className="text-xs text-[#077A7D]">Present</div>
+                  <div className="text-xl font-bold text-[#16404D]">
+                    {attendanceData.totalPresent}
                   </div>
                 </div>
-
-                {/* Chart - Only show on larger screens */}
-                <div className="hidden md:block bg-white p-3 rounded-lg border border-[#A6CDC6]">
-                  <h3 className="text-base md:text-lg font-semibold text-[#16404D] mb-3 flex items-center">
-                    <FiTrendingUp className="mr-2 text-[#077A7D]" />
-                    Daily Working Hours
-                  </h3>
-                  <div className="h-48 md:h-56">
-                    <Bar data={monthlyChartData} options={chartOptions} />
+                <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
+                  <div className="text-xs text-[#DDA853]">Late</div>
+                  <div className="text-xl font-bold text-[#16404D]">
+                    {attendanceData.totalLate}
                   </div>
                 </div>
+                <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
+                  <div className="text-xs text-[#16404D]">Absent</div>
+                  <div className="text-xl font-bold text-[#16404D]">
+                    {attendanceData.totalAbsent}
+                  </div>
+                </div>
+                <div className="bg-white p-3 rounded-lg border border-[#A6CDC6] text-center">
+                  <div className="text-xs text-[#077A7D]">Avg. Hours</div>
+                  <div className="text-xl font-bold text-[#16404D]">
+                    {attendanceData.averageWorkHours.toFixed(1)}
+                  </div>
+                </div>
+              </div>
 
-                {/* Attendance Records */}
-                <div>
-                  <h3 className="text-base md:text-lg font-semibold text-[#16404D] mb-3">Daily Records</h3>
-                  
-                  {/* Mobile Card View */}
-                  <div className="md:hidden space-y-3">
-                    {attendanceData.monthly.records.map((record, index) => (
+              {/* Chart - Only show on larger screens */}
+              <div className="hidden md:block bg-white p-3 rounded-lg border border-[#A6CDC6]">
+                <h3 className="text-base md:text-lg font-semibold text-[#16404D] mb-3 flex items-center">
+                  <FiTrendingUp className="mr-2 text-[#077A7D]" />
+                  Daily Working Hours
+                </h3>
+                <div className="h-48 md:h-56">
+                  <Bar data={monthlyChartData} options={chartOptions} />
+                </div>
+              </div>
+
+              {/* Attendance Records */}
+              <div>
+                <h3 className="text-base md:text-lg font-semibold text-[#16404D] mb-3">Daily Records</h3>
+                
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {attendanceData.records.map((record, index) => {
+                    const status = getDayStatus(record);
+                    return (
                       <div 
                         key={index} 
                         className="bg-white p-3 rounded-lg border border-[#A6CDC6]"
@@ -332,23 +314,33 @@ const HistoryPage = () => {
                             <p className="font-medium text-[#16404D]">
                               {formatDate(record.date)}
                             </p>
-                            <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(record.status)}`}>
-                              {getStatusIcon(record.status)}
-                              {record.status}
+                            <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(status)}`}>
+                              {getStatusIcon(status)}
+                              {status}
                             </span>
                           </div>
                           <p className="text-sm font-medium text-[#077A7D]">
-                            {record.workHours.toFixed(1)}h
+                            {record.workHours ? record.workHours.toFixed(1) + 'h' : '-'}
                           </p>
                         </div>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
                             <p className="text-[#16404D]/70">Time In</p>
                             <p className="font-medium">{formatTime(record.inTime)}</p>
+                            {record.inStatus && record.inStatus !== 'Absent' && (
+                              <span className={`text-xs ${record.inStatus === 'Late' ? 'text-[#DDA853]' : 'text-[#077A7D]'}`}>
+                                ({record.inStatus})
+                              </span>
+                            )}
                           </div>
                           <div>
                             <p className="text-[#16404D]/70">Time Out</p>
                             <p className="font-medium">{formatTime(record.outTime)}</p>
+                            {record.outStatus && record.outStatus !== 'Absent' && (
+                              <span className={`text-xs ${record.outStatus === 'Early Leave' ? 'text-[#DDA853]' : 'text-[#077A7D]'}`}>
+                                ({record.outStatus})
+                              </span>
+                            )}
                           </div>
                         </div>
                         {record.notes && (
@@ -358,25 +350,29 @@ const HistoryPage = () => {
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
+                </div>
 
-                  {/* Desktop Table View */}
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-[#7AE2CF]/30 text-[#16404D]">
-                          <th className="p-2 text-left rounded-tl-lg text-sm">Date</th>
-                          <th className="p-2 text-left text-sm">Status</th>
-                          <th className="p-2 text-left text-sm">Time In</th>
-                          <th className="p-2 text-left text-sm">Time Out</th>
-                          <th className="p-2 text-left text-sm">Hours</th>
-                          <th className="p-2 text-left text-sm">Notes</th>
-                          <th className="p-2 text-left rounded-tr-lg text-sm">Device</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {attendanceData.monthly.records.map((record, index) => (
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-[#7AE2CF]/30 text-[#16404D]">
+                        <th className="p-2 text-left rounded-tl-lg text-sm">Date</th>
+                        <th className="p-2 text-left text-sm">Status</th>
+                        <th className="p-2 text-left text-sm">Time In</th>
+                        <th className="p-2 text-left text-sm">In Status</th>
+                        <th className="p-2 text-left text-sm">Time Out</th>
+                        <th className="p-2 text-left text-sm">Out Status</th>
+                        <th className="p-2 text-left text-sm">Hours</th>
+                        <th className="p-2 text-left rounded-tr-lg text-sm">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {attendanceData.records.map((record, index) => {
+                        const status = getDayStatus(record);
+                        return (
                           <tr 
                             key={index} 
                             className={`border-b border-[#A6CDC6] ${index % 2 === 0 ? 'bg-[#FBF5DD]' : 'bg-[#F5EEDD]'}`}
@@ -385,106 +381,64 @@ const HistoryPage = () => {
                               {formatDate(record.date)}
                             </td>
                             <td className="p-2">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(record.status)}`}>
-                                {getStatusIcon(record.status)}
-                                {record.status}
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(status)}`}>
+                                {getStatusIcon(status)}
+                                {status}
                               </span>
                             </td>
                             <td className="p-2 text-sm">{formatTime(record.inTime)}</td>
+                            <td className="p-2 text-sm">
+                              <span className={`${record.inStatus === 'Late' ? 'text-[#DDA853]' : 'text-[#077A7D]'}`}>
+                                {record.inStatus}
+                              </span>
+                            </td>
                             <td className="p-2 text-sm">{formatTime(record.outTime)}</td>
+                            <td className="p-2 text-sm">
+                              <span className={`${record.outStatus === 'Early Leave' ? 'text-[#DDA853]' : 'text-[#077A7D]'}`}>
+                                {record.outStatus}
+                              </span>
+                            </td>
                             <td className="p-2 text-sm font-medium">
-                              {record.workHours.toFixed(1)}h
+                              {record.workHours ? record.workHours.toFixed(1) + 'h' : '-'}
                             </td>
                             <td className="p-2 text-sm max-w-[150px] truncate" title={record.notes}>
                               {record.notes || '-'}
                             </td>
-                            <td className="p-2 text-sm text-ellipsis max-w-[120px] overflow-hidden">
-                              {record.deviceInfo || '-'}
-                            </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Past Months Summary */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {attendanceData.pastMonths.map((month, index) => (
-                    <div key={index} className="bg-white p-3 rounded-lg border border-[#A6CDC6]">
-                      <h3 className="text-base font-semibold text-[#16404D] mb-2">{month.label}</h3>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#077A7D]">Present:</span>
-                          <span className="font-medium">{month.totalPresent} days</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#DDA853]">Late:</span>
-                          <span className="font-medium">{month.totalLate} days</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#16404D]">Absent:</span>
-                          <span className="font-medium">{month.totalAbsent} days</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-[#077A7D]">Avg. Hours:</span>
-                          <span className="font-medium">{month.averageWorkHours.toFixed(1)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Trend Chart */}
-                <div className="bg-white p-3 rounded-lg border border-[#A6CDC6]">
-                  <h3 className="text-base md:text-lg font-semibold text-[#16404D] mb-3 flex items-center">
-                    <FiTrendingUp className="mr-2 text-[#077A7D]" />
-                    Attendance Trends (Last {attendanceData.pastMonths.length + 1} Months)
-                  </h3>
-                  <div className="h-48 md:h-56">
-                    <Line data={pastMonthsChartData} options={chartOptions} />
-                  </div>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Summary Footer */}
           <div className="bg-[#F5EEDD] p-3 border-t border-[#A6CDC6] flex flex-col sm:flex-row justify-between items-center gap-3">
             <div className="flex items-center">
-              <FiFilter className="text-[#077A7D] mr-2" />
+              <FiCalendar className="text-[#077A7D] mr-2" />
               <span className="text-xs md:text-sm text-[#16404D]">
-                Showing data for {activeTab === 'monthly' ? attendanceData.monthly.label : 'past months'}
+                Showing data for {attendanceData.monthLabel}
               </span>
             </div>
             <div className="flex gap-3">
               <div className="text-center min-w-[60px]">
                 <div className="text-xs text-[#077A7D]">Present</div>
                 <div className="text-sm font-bold text-[#16404D]">
-                  {activeTab === 'monthly' 
-                    ? attendanceData.monthly.totalPresent
-                    : attendanceData.pastMonths.reduce((sum, month) => sum + month.totalPresent, 0)
-                  }
+                  {attendanceData.totalPresent}
                 </div>
               </div>
               <div className="text-center min-w-[60px]">
                 <div className="text-xs text-[#DDA853]">Late</div>
                 <div className="text-sm font-bold text-[#16404D]">
-                  {activeTab === 'monthly' 
-                    ? attendanceData.monthly.totalLate
-                    : attendanceData.pastMonths.reduce((sum, month) => sum + month.totalLate, 0)
-                  }
+                  {attendanceData.totalLate}
                 </div>
               </div>
               <div className="text-center min-w-[60px]">
                 <div className="text-xs text-[#16404D]">Absent</div>
                 <div className="text-sm font-bold text-[#16404D]">
-                  {activeTab === 'monthly' 
-                    ? attendanceData.monthly.totalAbsent
-                    : attendanceData.pastMonths.reduce((sum, month) => sum + month.totalAbsent, 0)
-                  }
+                  {attendanceData.totalAbsent}
                 </div>
               </div>
             </div>

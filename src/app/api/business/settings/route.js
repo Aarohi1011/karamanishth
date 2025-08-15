@@ -26,9 +26,41 @@ export async function POST(req) {
             }, { status: 404 });
         }
 
+        // Validate coordinates if provided
+        if (settingsData.coordinates) {
+            const { latitude, longitude } = settingsData.coordinates;
+            if (
+                typeof latitude !== 'number' ||
+                latitude < -90 ||
+                latitude > 90 ||
+                typeof longitude !== 'number' ||
+                longitude < -180 ||
+                longitude > 180
+            ) {
+                return NextResponse.json({
+                    success: false,
+                    msg: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180.'
+                }, { status: 400 });
+            }
+        }
+
+        // ✅ Validate radiusMeters if provided
+        if (settingsData.radiusMeters !== undefined) {
+            if (
+                typeof settingsData.radiusMeters !== 'number' ||
+                settingsData.radiusMeters < 1 ||
+                settingsData.radiusMeters > 50000
+            ) {
+                return NextResponse.json({
+                    success: false,
+                    msg: 'Invalid radius. Must be a number between 1 and 50000 meters.'
+                }, { status: 400 });
+            }
+        }
+
         // Validate working days don't conflict with weekly holidays
         if (settingsData.workingDays && settingsData.weeklyHoliday) {
-            const hasConflict = settingsData.workingDays.some(day => 
+            const hasConflict = settingsData.workingDays.some(day =>
                 settingsData.weeklyHoliday.includes(day)
             );
             if (hasConflict) {
@@ -43,10 +75,10 @@ export async function POST(req) {
         let settings = await BusinessSettings.findOneAndUpdate(
             { business: businessId },
             { $set: settingsData },
-            { 
+            {
                 new: true,
                 upsert: true,
-                runValidators: true 
+                runValidators: true
             }
         );
 
@@ -80,11 +112,10 @@ export async function GET(req) {
             }, { status: 400 });
         }
 
-        const settings = await BusinessSettings.findOne({ 
-            business: businessId 
+        const settings = await BusinessSettings.findOne({
+            business: businessId
         }).populate('business', 'businessName businessType');
-        console.log(settings);
-        
+
         if (!settings) {
             // Return default settings structure if none exists
             return NextResponse.json({
@@ -92,6 +123,11 @@ export async function GET(req) {
                 msg: 'No custom settings found, returning defaults',
                 data: {
                     businessId: businessId,
+                    coordinates: {
+                        latitude: 0,
+                        longitude: 0
+                    },
+                    radiusMeters: 100, // ✅ new default
                     defaultInTime: '09:00',
                     defaultOutTime: '18:00',
                     workingDays: [1, 2, 3, 4, 5],
