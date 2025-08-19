@@ -6,11 +6,11 @@ import "./globals.css";
 //   variable: "--font-geist-sans",
 //   weight: "100 900",
 // });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+// const geistMono = localFont({
+//   src: "./fonts/GeistMonoVF.woff",
+//   variable: "--font-geist-mono",
+//   weight: "100 900",
+// });
 export const viewport = {
   maximumScale: 1,
   userScalable: false
@@ -211,7 +211,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={` ${geistMono.variable} antialiased`}>
+      <body className={` antialiased`}>
         {children}
       </body>
     </html>
