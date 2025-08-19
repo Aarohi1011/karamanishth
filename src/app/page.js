@@ -77,7 +77,7 @@ export default function Home() {
               <a href="#how-it-works" className="hover:text-[#7AE2CF] transition-colors py-2">How It Works</a>
               <a href="#pricing" className="hover:text-[#7AE2CF] transition-colors py-2">Pricing</a>
               <a href="#contact" className="hover:text-[#7AE2CF] transition-colors py-2">Contact</a>
-              <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-[#077A7D] hover:bg-[#065E60] text-white px-4 py-2 rounded-md transition-colors w-full text-center">
+              <Link href="/signup" className="bg-[#077A7D] hover:bg-[#065E60] text-white px-4 py-2 rounded-md transition-colors w-full text-center">
                 Get Started
               </Link>
             </div>
@@ -102,7 +102,7 @@ export default function Home() {
                     Login
                   </Link>
                 </button>
-                <Link href="https://karamanishth.sharmaindustry.in/signup" className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium text-center">
+                <Link href="/signup" className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium text-center">
                   Get Started
                 </Link>
               </div>

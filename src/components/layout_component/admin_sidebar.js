@@ -11,7 +11,8 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdMenu,
-  MdClose
+  MdClose,
+  MdSettings // Added Settings Icon
 } from "react-icons/md";
 import Link from 'next/link';
 
@@ -50,7 +51,7 @@ export default function Admin_Sidebar({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isMobileSidebarOpen]);
+  }, [isMobileSidebarOpen, setIsMobileSidebarOpen]);
 
   return (
     <>
@@ -69,7 +70,8 @@ export default function Admin_Sidebar({
         className={`hidden lg:block bg-gradient-to-b from-[#06202B] to-[#16404D] text-[#F5EEDD] flex-col h-screen shadow-lg transition-all duration-300 ease-in-out fixed
           ${isDesktopSidebarCollapsed ? 'w-24' : 'w-72'} 
           ${isHovering && isDesktopSidebarCollapsed ? 'w-72' : ''}`}
-        
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
       >
         {/* Collapse/Expand Button */}
         <div className="flex justify-end p-3">
@@ -193,10 +195,22 @@ export default function Admin_Sidebar({
               </button>
             </Link>
 
+            {/* Settings Button */}
+            <Link href="/admin/settings" onClick={handleLinkClick}>
+              <button
+                className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
+                  ${isActive(['/admin/settings'])}
+                  ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
+              >
+                <MdSettings className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Settings'}
+              </button>
+            </Link>
+
             {/* Logout Button */}
             <button
               onClick={handleLogoutClick}
-              className={`flex items-center gap-3 px-3 py-3 mt-4 rounded-lg text-[#F5EEDD] transition duration-200 ease-in-out bg-[#077A7D] hover:bg-[#16404D]
+              className={`flex items-center gap-3 w-full px-3 py-3 mt-4 rounded-lg text-[#F5EEDD] transition duration-200 ease-in-out bg-[#077A7D] hover:bg-[#16404D]
                 ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
             >
               <MdExitToApp className="text-xl" />
@@ -262,6 +276,14 @@ export default function Admin_Sidebar({
               <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/holidays'])}`}>
                 <MdCalendarToday className='text-xl text-[#F5EEDD]' />
                 Holidays
+              </button>
+            </Link>
+
+            {/* Settings Button */}
+            <Link href="/admin/settings" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/admin/settings'])}`}>
+                <MdSettings className='text-xl text-[#F5EEDD]' />
+                Settings
               </button>
             </Link>
 

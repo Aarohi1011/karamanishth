@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const EmployeeManagement = () => {
+  const router = useRouter();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -95,6 +97,17 @@ const EmployeeManagement = () => {
     employee.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Navigate to employee detail page
+  const handleEmployeeClick = (employeeId) => {
+    router.push(`/admin/employee_management/${employeeId}`);
+  };
+
+  // Navigate to edit page
+  const handleEditClick = (employeeId, e) => {
+    e.stopPropagation(); // Prevent triggering the row click
+    router.push(`/admin/employee_management/${employeeId}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#06202B] to-[#16404D] flex items-center justify-center">
@@ -172,7 +185,11 @@ const EmployeeManagement = () => {
                   </thead>
                   <tbody className="divide-y divide-[#0A5560]">
                     {filteredEmployees.map((employee) => (
-                      <tr key={employee._id} className="hover:bg-[#0E6774] transition duration-150">
+                      <tr 
+                        key={employee._id} 
+                        className="hover:bg-[#0E6774] transition duration-150 cursor-pointer"
+                        onClick={() => handleEmployeeClick(employee._id)}
+                      >
                         <td className="py-4 px-4 text-[#F5EEDD]">
                           <div className="flex items-center">
                             <div className="w-10 h-10 rounded-full bg-[#077A7D] flex items-center justify-center text-[#FBF5DD] font-bold mr-3">
@@ -208,10 +225,19 @@ const EmployeeManagement = () => {
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
-                            <button className="text-[#7AE2CF] hover:text-[#5ac7b3]">
+                            <button 
+                              className="text-[#7AE2CF] hover:text-[#5ac7b3]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEmployeeClick(employee._id);
+                              }}
+                            >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                             </button>
-                            <button className="text-[#DDA853] hover:text-[#c09548]">
+                            <button 
+                              className="text-[#DDA853] hover:text-[#c09548]"
+                              onClick={(e) => handleEditClick(employee._id, e)}
+                            >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                             </button>
                           </div>
@@ -225,7 +251,11 @@ const EmployeeManagement = () => {
               {/* Card View for Mobile screens */}
               <div className="md:hidden p-4 space-y-4">
                 {filteredEmployees.map((employee) => (
-                  <div key={employee._id} className="bg-[#0E6774] rounded-lg p-4 shadow-md text-sm">
+                  <div 
+                    key={employee._id} 
+                    className="bg-[#0E6774] rounded-lg p-4 shadow-md text-sm cursor-pointer"
+                    onClick={() => handleEmployeeClick(employee._id)}
+                  >
                     <div className="flex items-center justify-between mb-4">
                        <div className="flex items-center">
                           <div className="w-10 h-10 rounded-full bg-[#077A7D] flex items-center justify-center text-[#FBF5DD] font-bold mr-3">
@@ -270,10 +300,22 @@ const EmployeeManagement = () => {
                     </div>
 
                     <div className="border-t border-[#0A5560] pt-4 mt-4 flex justify-end gap-3">
-                        <button className="text-[#7AE2CF] hover:text-[#5ac7b3] p-2 rounded-full hover:bg-[#16404D]">
+                        <button 
+                          className="text-[#7AE2CF] hover:text-[#5ac7b3] p-2 rounded-full hover:bg-[#16404D]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEmployeeClick(employee._id);
+                          }}
+                        >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                         </button>
-                        <button className="text-[#DDA853] hover:text-[#c09548] p-2 rounded-full hover:bg-[#16404D]">
+                        <button 
+                          className="text-[#DDA853] hover:text-[#c09548] p-2 rounded-full hover:bg-[#16404D]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(employee._id, e);
+                          }}
+                        >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                         </button>
                     </div>
