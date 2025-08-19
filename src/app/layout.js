@@ -21,7 +21,7 @@ const defaultUrl = process.env.VERCEL_URL
   : "http://localhost:3000";
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Karmnisth",
+  title: "Karmanisth",
   description: "Employee Management System",
   themeColor: "#077A7D",
   viewport: "width=device-width, initial-scale=1",

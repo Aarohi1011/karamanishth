@@ -1,7 +1,7 @@
 export default function manifest() {
   return {
     name: 'Karmnisth - Employee Management System',
-    short_name: 'Karmnisth',
+    short_name: 'Karmanisth',
     description: 'A app to manage the Employee and automate Payroll System',
     start_url: '/',
     display: 'standalone',
