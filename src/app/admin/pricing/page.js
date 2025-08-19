@@ -86,7 +86,7 @@ const Page = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-[#06202B] mb-4">Simple, Transparent Pricing</h2>
             <p className="text-lg text-[#077A7D] max-w-2xl mx-auto">
-              Choose the plan that fits your organization's needs
+              Choose the plan that fits your organizations needs
             </p>
           </div>
           

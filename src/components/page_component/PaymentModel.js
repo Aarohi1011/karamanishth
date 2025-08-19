@@ -124,7 +124,7 @@ const PaymentModal = ({ plan, onClose, currentEmployeeCount = 1, user }) => {
 
           <div className="mb-4 sm:mb-6">
             <p className="text-base sm:text-lg text-[#4080bf]">
-              You're subscribing to: <span className="font-semibold">{plan.name}</span>
+              Youre subscribing to: <span className="font-semibold">{plan.name}</span>
             </p>
 
             {/* Employee count input */}
