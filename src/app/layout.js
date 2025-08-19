@@ -1,11 +1,11 @@
 import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
+// const geistSans = localFont({
+//   src: "./fonts/GeistVF.woff",
+//   variable: "--font-geist-sans",
+//   weight: "100 900",
+// });
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
@@ -21,9 +21,9 @@ const defaultUrl = process.env.VERCEL_URL
   : "http://localhost:3000";
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "PathShala",
-  description: "A Platform for School which provide A School Management System",
-  themeColor: "#ffffff",
+  title: "Karmnisth",
+  description: "Employee Management System",
+  themeColor: "#077A7D",
   viewport: "width=device-width, initial-scale=1",
   
   // Using existing icon files for both platforms
@@ -211,7 +211,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={` ${geistMono.variable} antialiased`}>
         {children}
       </body>
     </html>
