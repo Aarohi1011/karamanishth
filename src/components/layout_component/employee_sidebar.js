@@ -10,7 +10,8 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdMenu,
-  MdClose
+  MdClose,
+  MdHowToReg
 } from "react-icons/md";
 import Link from 'next/link';
 
@@ -144,15 +145,15 @@ export default function Employee_Sidebar({
               </button>
             </Link>
 
-            {/* QR Scan Button */}
-            <Link href="/employee/QrScan" onClick={handleLinkClick}>
+           {/* Mark Attendance Button */}
+            <Link href="/employee/MarkAttendance" onClick={handleLinkClick}>
               <button
                 className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out 
-                  ${isActive(['/employee/QrScan'])}
+                  ${isActive(['/employee/MarkAttendance'])}
                   ${(isDesktopSidebarCollapsed && !isHovering) ? 'justify-center px-2' : ''}`}
               >
-                <MdQrCodeScanner className='text-xl text-[#F5EEDD]' />
-                {(!isDesktopSidebarCollapsed || isHovering) && 'QR Scan'}
+                <MdHowToReg className='text-xl text-[#F5EEDD]' />
+                {(!isDesktopSidebarCollapsed || isHovering) && 'Mark Attendance'}
               </button>
             </Link>
 
@@ -208,11 +209,11 @@ export default function Employee_Sidebar({
               </button>
             </Link>
 
-            {/* QR Scan Button */}
-            <Link href="/employee/QrScan" onClick={handleLinkClick}>
-              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/employee/QrScan'])}`}>
-                <MdQrCodeScanner className='text-xl text-[#F5EEDD]' />
-                QR Scan
+           {/* Mark Attendance Button */}
+            <Link href="/employee/MarkAttendance" onClick={handleLinkClick}>
+              <button className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium text-left hover:bg-[#077A7D] transition duration-200 ease-in-out ${isActive(['/employee/MarkAttendance'])}`}>
+                <MdHowToReg className='text-xl text-[#F5EEDD]' />
+                Mark Attendance
               </button>
             </Link>
 
