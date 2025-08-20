@@ -187,7 +187,7 @@ export default function Employee_Sidebar({
         ${isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-center relative gap-2 text-xl font-bold mb-4 text-center">
           <Link href="/Head" onClick={handleLinkClick}>
-            <span className="text-[#F5EEDD]">Employee Dashboard</span>
+            <span className="text-[#F5EEDD]">Employee</span>
           </Link>
           <button
             className="p-2 text-[#F5EEDD] rounded absolute right-0 text-xl hover:bg-[#077A7D] transition-colors"
