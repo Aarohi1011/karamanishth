@@ -3,16 +3,23 @@ import { Holiday } from "@/app/models/holiday";
 import { DailyAttendance } from "@/app/models/dailyAttendance";
 import { NextResponse } from "next/server";
 
+/**
+ * Custom logger function to display formatted messages in the console.
+ * @param {string} level - The log level (e.g., 'info', 'success', 'warn', 'error').
+ * @param {string} message - The message to log.
+ * @param {object} data - Additional data to log as a JSON string.
+ */
 const log = (level, message, data = {}) => {
     const timestamp = new Date().toISOString();
     const colors = {
-        info: "\x1b[36m%s\x1b[0m",   // cyan
+        info: "\x1b[36m%s\x1b[0m",    // cyan
         success: "\x1b[32m%s\x1b[0m", // green
         warn: "\x1b[33m%s\x1b[0m",    // yellow
         error: "\x1b[31m%s\x1b[0m"    // red
     };
 
-    console.log(colors[level] || "%s", `[${timestamp}] [${level.toUpperCase()}] ${message}`, data);
+    // Log the message with color coding and additional data.
+    console.log(colors[level] || "%s", `[${timestamp}] [${level.toUpperCase()}] ${message}`, JSON.stringify(data, null, 2));
 };
 
 export async function GET(req) {
@@ -24,6 +31,7 @@ export async function GET(req) {
 
         const { searchParams } = new URL(req.url);
         const businessId = searchParams.get("businessId");
+        const dateParam = searchParams.get("date"); // Get the date from search params
 
         if (!businessId) {
             log("warn", "Business ID missing in request");
@@ -33,16 +41,29 @@ export async function GET(req) {
             }, { status: 400 });
         }
 
-        log("info", "Processing attendance request", { businessId });
+        // --- MODIFICATION START ---
+        // Determine the target date.
+        // If a date parameter is provided, construct the Date object by explicitly setting it as UTC midnight.
+        // This prevents timezone-related issues where the server's local time might shift the date.
+        let targetDate;
+        if (dateParam) {
+            // By appending T00:00:00.000Z, we ensure the string is parsed as UTC.
+            targetDate = new Date(`${dateParam}T00:00:00.000Z`);
+            console.log(targetDate);
 
-        const today = new Date();
-        // today.setHours(0, 0, 0, 0);
-        today.setUTCHours(0, 0, 0, 0);
+        } else {
+            // If no date is provided, default to the start of today in UTC.
+            targetDate = new Date();
+            targetDate.setUTCHours(0, 0, 0, 0);
+        }
+        // --- MODIFICATION END ---
 
-        // Check if today is a holiday
+        console.log("info", "Processing attendance request", { businessId, date: targetDate.toISOString().split('T')[0] });
+
+        // Check if the target date is a specific holiday
         const isHoliday = await Holiday.findOne({
             business: businessId,
-            date: today
+            date: targetDate
         });
 
         if (isHoliday) {
@@ -52,7 +73,7 @@ export async function GET(req) {
             });
             return NextResponse.json({
                 success: true,
-                msg: `Today is a holiday (${isHoliday.name})`,
+                msg: `The selected date is a holiday (${isHoliday.name})`,
                 isHoliday: true,
                 holidayName: isHoliday.name,
                 holidayDescription: isHoliday.description,
@@ -60,15 +81,18 @@ export async function GET(req) {
             }, { status: 200 });
         }
 
-        // Check if today is a weekly holiday
-        const month = today.getMonth() + 1;
-        const day = today.getDate();
+        // Check if the target date is a weekly or recurring yearly holiday
+        const month = targetDate.getUTCMonth() + 1;
+        const day = targetDate.getUTCDate();
+        const dayOfWeek = targetDate.getUTCDay(); // 0 for Sunday, 1 for Monday, etc.
 
         const isWeeklyHoliday = await Holiday.findOne({
             business: businessId,
             isWeeklyHoliday: true,
             $or: [
-                { recurrencePattern: "weekly" },
+                // Weekly holidays based on the day of the week
+                { recurrencePattern: "weekly", dayOfWeek: dayOfWeek },
+                // Yearly recurring holidays based on month and day
                 {
                     recurrencePattern: "yearly",
                     $expr: {
@@ -82,32 +106,47 @@ export async function GET(req) {
         });
 
         if (isWeeklyHoliday) {
-            log("success", "Weekly holiday detected", {
+            log("success", "Weekly/Recurring holiday detected", {
                 name: isWeeklyHoliday.name,
                 description: isWeeklyHoliday.description
             });
             return NextResponse.json({
                 success: true,
-                msg: `Today is a weekly holiday (${isWeeklyHoliday.name})`,
+                msg: `The selected date is a weekly holiday (${isWeeklyHoliday.name})`,
                 isHoliday: true,
                 holidayName: isWeeklyHoliday.name,
                 holidayDescription: isWeeklyHoliday.description,
                 data: null
             }, { status: 200 });
         }
+        console.log(targetDate);
+        console.log(businessId);
+        function convertDateFormat(dateString) {
+            const date = new Date(dateString);
 
-        // Fetch attendance
+            // ✅ Add 1 day
+            date.setUTCDate(date.getUTCDate());
+
+            // ✅ Force to midnight UTC
+            date.setUTCHours(0, 0, 0, 0);
+
+            // ✅ Convert to ISO string with +00:00 instead of 'Z'
+            return date.toISOString().replace("Z", "+00:00");
+        }
+        const formatteddate = convertDateFormat(targetDate);
+        console.log("Hey I am the formatted date", formatteddate);
+
+        // Fetch attendance for the target date
         const attendanceRecord = await DailyAttendance.findOne({
-            date: today,
+            date: formatteddate,
             business: businessId
-        })
-        console.log(today);
-        
+        });
+
         if (!attendanceRecord) {
-            log("warn", "No attendance record found for today");
+            log("warn", "No attendance record found for the specified date", { date: targetDate.toISOString().split('T')[0] });
             return NextResponse.json({
                 success: true,
-                msg: "No attendance recorded today",
+                msg: "No attendance recorded for the selected date",
                 data: null
             }, { status: 200 });
         }

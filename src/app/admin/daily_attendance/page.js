@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { FiDownload, FiFilter, FiSearch, FiChevronDown, FiChevronUp, FiCheckCircle, FiXCircle, FiClock, FiArrowLeft } from 'react-icons/fi'
+import { FiDownload, FiFilter, FiSearch, FiChevronDown, FiChevronUp, FiCheckCircle, FiXCircle, FiClock, FiArrowLeft, FiCalendar } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/app/lib/auth'
 
@@ -15,6 +15,8 @@ const DailyAttendancePage = () => {
   const [loading, setLoading] = useState(true)
   const [holidayInfo, setHolidayInfo] = useState(null)
   const [isMobile, setIsMobile] = useState(false)
+  // State to hold the target date, defaults to today's date in YYYY-MM-DD format.
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,11 +49,12 @@ const DailyAttendancePage = () => {
     if (!businessId) return
 
     const fetchData = async () => {
+      setLoading(true); // Ensure loading state is true at the start of fetch
       try {
-        // --- MODIFICATION START ---
-        // Fetch both attendance and all employee details concurrently for efficiency
+        // Fetch both attendance and all employee details concurrently for efficiency.
+        // The date parameter is now added to the attendance API call.
         const [attendanceResponse, employeeDetailsResponse] = await Promise.all([
-          fetch(`/api/business/attendance?businessId=${businessId}`),
+          fetch(`/api/business/attendance?businessId=${businessId}&date=${selectedDate}`),
           fetch('/api/business/getemployee') 
         ]);
 
@@ -68,14 +71,13 @@ const DailyAttendancePage = () => {
             detailsMap[emp._id] = {
               name: emp.name,
               role: emp.role,
-              department: emp.department || 'Not specified' // Fallback if department is not present
+              department: emp.department || 'Not specified' // Fallback
             };
           });
           setEmployeeDetails(detailsMap);
         } else {
           throw new Error(employeeDetailsJson.msg || "Failed to fetch employee details.");
         }
-        // --- MODIFICATION END ---
         
         if (!attendanceJson.success) {
           throw new Error(attendanceJson.msg || "Failed to fetch attendance data.");
@@ -86,20 +88,21 @@ const DailyAttendancePage = () => {
             name: attendanceJson.holidayName,
             description: attendanceJson.holidayDescription
           });
-          setLoading(false);
-          return;
+          setAttendanceData(null); // Clear previous attendance data
+        } else {
+          setAttendanceData(attendanceJson.data);
+          setHolidayInfo(null); // Clear previous holiday info
         }
         
-        setAttendanceData(attendanceJson.data);
-        setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchData()
-  }, [businessId])
+  }, [businessId, selectedDate]) // useEffect now depends on businessId and selectedDate
 
 
   const formatEmployeeData = () => {
@@ -212,7 +215,7 @@ const DailyAttendancePage = () => {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    link.setAttribute('download', `attendance_${new Date().toLocaleDateString()}.csv`)
+    link.setAttribute('download', `attendance_${selectedDate}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -238,11 +241,11 @@ const DailyAttendancePage = () => {
             >
               <FiArrowLeft className="text-[#16404D] text-lg md:text-xl" />
             </button>
-            <h1 className="text-xl md:text-3xl font-bold text-[#06202B]">Daily Attendance</h1>
+            <h1 className="text-xl md:text-3xl font-bold text-[#06202B]">Daily Attendance for {selectedDate}</h1>
           </div>
           
           <div className="bg-white rounded-lg md:rounded-xl shadow-md md:shadow-lg p-4 md:p-6 text-center">
-            <h2 className="text-lg md:text-xl font-semibold text-[#16404D] mb-2">Today is a holiday!</h2>
+            <h2 className="text-lg md:text-xl font-semibold text-[#16404D] mb-2">This day is a holiday!</h2>
             <h3 className="text-md md:text-lg text-[#077A7D] mb-3 md:mb-4">{holidayInfo.name}</h3>
             <p className="text-sm md:text-base text-[#06202B]">{holidayInfo.description}</p>
           </div>
@@ -265,6 +268,14 @@ const DailyAttendancePage = () => {
             <h1 className="text-xl md:text-3xl font-bold text-[#06202B]">Daily Attendance</h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full md:w-auto">
+            <div className="relative">
+              <input
+                type="date"
+                className="pl-3 pr-4 py-2 w-full border border-[#A6CDC6] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#077A7D] focus:border-transparent bg-white text-sm md:text-base"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
             <div className="relative flex-grow">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <FiSearch className="text-[#16404D]" />
@@ -279,7 +290,7 @@ const DailyAttendancePage = () => {
             </div>
             <div className="relative">
               <select
-                className="appearance-none pl-3 pr-8 py-2 border border-[#A6CDC6] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#077A7D] focus:border-transparent bg-white text-sm md:text-base"
+                className="appearance-none pl-3 pr-8 py-2 border border-[#A6CDC6] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#077A7D] focus:border-transparent bg-white text-sm md:text-base w-full"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -300,6 +311,12 @@ const DailyAttendancePage = () => {
               <FiDownload size={16} /> <span>Export</span>
             </button>
           </div>
+        </div>
+
+        <div className="mb-4">
+            <p className="text-lg font-semibold text-[#06202B]">
+                Showing records for: <span className="text-[#077A7D]">{new Date(selectedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</span>
+            </p>
         </div>
 
         {attendanceData && attendanceData.employees ? (
@@ -376,7 +393,6 @@ const DailyAttendancePage = () => {
                     <table className="min-w-full divide-y divide-[#A6CDC6]">
                       <thead className="bg-[#FBF5DD]">
                         <tr>
-                          {/* Note: The 'id' column now shows the Employee Name */}
                           <th 
                             scope="col" 
                             className="px-4 md:px-6 py-2 md:py-3 text-left text-xs font-medium text-[#16404D] uppercase tracking-wider cursor-pointer"
@@ -509,7 +525,7 @@ const DailyAttendancePage = () => {
           </>
         ) : (
           <div className="bg-white rounded-lg md:rounded-xl shadow-md md:shadow-lg p-4 md:p-6 text-center">
-            <p className="text-[#16404D]">No attendance recorded for today</p>
+            <p className="text-[#16404D]">No attendance recorded for {selectedDate}</p>
           </div>
         )}
       </div>
