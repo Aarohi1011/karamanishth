@@ -2,7 +2,7 @@ import connectDB from "@/app/lib/dbconnect";
 import { DailyAttendance } from "@/app/models/dailyAttendance";
 import { Holiday } from "@/app/models/holiday";
 import { NextResponse } from "next/server";
-
+import { Employee } from "@/app/models/employee";
 export async function GET(req) {
   try {
     await connectDB();
