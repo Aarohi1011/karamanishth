@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -7,14 +7,48 @@ import Link from 'next/link';
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [email, setEmail] = useState('');
+    const [installPrompt, setInstallPrompt] = useState(null);
 
+  // 2. New useEffect to handle the beforeinstallprompt event
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
   const handleSubmit = (e) => {
     e.preventDefault();
     // Handle form submission
     alert(`Thank you for your interest! We'll contact you at ${email}`);
     setEmail('');
   };
-
+    const handleInstallClick = () => {
+    if (!installPrompt) {
+      return;
+    }
+    // Show the install prompt
+    installPrompt.prompt();
+    
+    // Log the result or handle it as needed
+    installPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+        } else {
+            console.log('User dismissed the install prompt');
+        }
+        // We can only use the prompt once, so clear it.
+        setInstallPrompt(null);
+    });
+  };
   return (
     <div className="min-h-screen bg-[#F5EEDD]">
       <Head>
@@ -46,6 +80,8 @@ export default function Home() {
               <a href="#how-it-works" className="hover:text-[#7AE2CF] transition-colors">How It Works</a>
               <a href="#pricing" className="hover:text-[#7AE2CF] transition-colors">Pricing</a>
               <a href="#contact" className="hover:text-[#7AE2CF] transition-colors">Contact</a>
+              {/* 4. Conditionally render the new Install button */}
+  
               <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-[#077A7D] hover:bg-[#065E60] text-white px-4 py-2 rounded-md transition-colors shadow-lg hover:shadow-teal-900/30">
                 Get Started
               </Link>
@@ -108,6 +144,14 @@ export default function Home() {
                     Login
                   </Link>
                 </button>
+                {installPrompt && (
+    <button
+      onClick={handleInstallClick}
+      className="bg-[#7AE2CF] hover:bg-[#5ECCB7] text-[#06202B] px-4 py-2 rounded-md transition-colors font-medium"
+    >
+      Install App
+    </button>
+  )}
                 <Link href="/signup" className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium text-center shadow-lg hover:shadow-teal-900/30">
                   Get Started
                 </Link>
@@ -134,7 +178,7 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="ml-2 text-[#06202B]">
-                    <p className="font-bold">99.9%</p>
+                    {/* <p className="font-bold">99.9%</p> */}
                     <p className="text-sm">High Accuracy</p>
                   </div>
                 </div>
@@ -559,7 +603,7 @@ export default function Home() {
                     required
                   />
                 </div>
-                <div className极="mb-4">
+                <div className="mb-4">
                   <label htmlFor="email" className="block text-gray-700 mb-2">Email</label>
                   <input
                     type="email"
