@@ -3,30 +3,26 @@ import connectDB from "@/app/lib/dbconnect";
 import Payroll from "@/app/models/payroll";
 import { Employee } from "@/app/models/employee";
 import { Business } from "@/app/models/business";
-import { DailyAttendance } from "@/app/models/dailyAttendance"; // ✅ IMPORT
-import { Holiday } from "@/app/models/holiday"; // ✅ IMPORT
-import { BusinessSettings } from "@/app/models/businessSettings"; // ✅ IMPORT
+import { DailyAttendance } from "@/app/models/dailyAttendance";
+import { BusinessSettings } from "@/app/models/businessSettings"; // Import the new settings model
 import { auth } from "@/app/lib/auth";
 
-// ✅ CREATE Payroll (POST) - No changes needed
+// ✅ CREATE Payroll (POST) - No changes
 export async function POST(req) {
   try {
     await connectDB();
     const data = await req.json();
 
-    // Check Employee Exists
     const employee = await Employee.findById(data.employee);
     if (!employee) {
       return NextResponse.json({ success: false, msg: "Employee not found" }, { status: 404 });
     }
 
-    // Check Business Exists
     const business = await Business.findById(data.businessId);
     if (!business) {
       return NextResponse.json({ success: false, msg: "Business not found" }, { status: 404 });
     }
 
-    // Prevent duplicate payroll for same employee in same month/year
     const exists = await Payroll.findOne({
       employee: data.employee,
       businessId: data.businessId,
@@ -39,7 +35,6 @@ export async function POST(req) {
     }
 
     const payroll = await Payroll.create(data);
-
     return NextResponse.json({ success: true, msg: "Payroll created", payroll }, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -47,7 +42,7 @@ export async function POST(req) {
   }
 }
 
-// ✅ GET Payrolls (with Auto-Generation & Attendance Calculation)
+// ✅ GET Payrolls or Generate Attendance Data (GET) - UPDATED LOGIC
 export async function GET(req) {
   try {
     console.log("\x1b[34m📡 [REQUEST] Incoming GET /api/payrolls\x1b[0m");
@@ -58,8 +53,8 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const businessId = searchParams.get("businessId");
     const employeeId = searchParams.get("employeeId");
-    const month = parseInt(searchParams.get("month"), 10);
-    const year = parseInt(searchParams.get("year"), 10);
+    const month = searchParams.get("month");
+    const year = searchParams.get("year");
 
     if (!businessId || !month || !year) {
       return NextResponse.json(
@@ -71,167 +66,132 @@ export async function GET(req) {
     let filter = { businessId, month, year };
     if (employeeId) filter.employee = employeeId;
 
-    let payrolls = await Payroll.find(filter)
+    const existingPayrolls = await Payroll.find(filter)
       .populate("employee", "name email phone role salary")
       .populate("businessId", "businessName businessType");
 
-    if (payrolls.length === 0 && !employeeId) {
-      console.log("\x1b[33m⚠️ [ACTION] No payrolls found → Generating pending payrolls with detailed stats\x1b[0m");
-
-      // =================================================================
-      // 1. FETCH & CALCULATE BUSINESS-WIDE DATA
-      // =================================================================
-      
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0);
-
-      const settings = await BusinessSettings.findOne({ business: businessId });
-      if (!settings) {
-          return NextResponse.json({ success: false, msg: "Business settings not found" }, { status: 404 });
-      }
-      
-      const workingDaysOfWeek = new Set(settings.workingDays);
-      const holidays = await Holiday.find({ business: businessId, date: { $gte: startDate, $lte: endDate } });
-      const holidayDates = new Set(holidays.map(h => h.date.toISOString().split('T')[0]));
-      
-      const dailyAttendances = await DailyAttendance.find({ business: businessId, date: { $gte: startDate, $lte: endDate } });
-      const attendanceMap = new Map();
-      dailyAttendances.forEach(att => attendanceMap.set(att.date.toISOString().split('T')[0], att));
-
-      let totalWorkingDaysInMonth = 0;
-      for (let day = 1; day <= endDate.getDate(); day++) {
-          const currentDate = new Date(year, month - 1, day);
-          const dayOfWeek = currentDate.getDay();
-          const dateString = currentDate.toISOString().split('T')[0];
-          if (workingDaysOfWeek.has(dayOfWeek) && !holidayDates.has(dateString)) {
-              totalWorkingDaysInMonth++;
-          }
-      }
-
-      // Calculate standard daily and monthly business hours
-      const [outH, outM] = settings.defaultOutTime.split(':').map(Number);
-      const [inH, inM] = settings.defaultInTime.split(':').map(Number);
-      const shiftDurationHours = (outH - inH) + (outM - inM) / 60;
-      const dailyBusinessWorkHours = shiftDurationHours - (settings.lunchDurationMinutes / 60);
-      const totalBusinessHoursInMonth = parseFloat((dailyBusinessWorkHours * totalWorkingDaysInMonth).toFixed(2));
-
-      // =================================================================
-      // 2. GENERATE PAYROLL FOR EACH EMPLOYEE WITH DETAILED STATS
-      // =================================================================
-      const employees = await Employee.find({ businessName: user.businessName, role: "Staff" });
-      if (employees.length === 0) {
-        return NextResponse.json({ success: false, msg: "No Staff employees found" }, { status: 404 });
-      }
-      
-      const newPayrollsData = employees.map(emp => {
-          // ✅ NEW: Initialize counters for detailed stats
-          let presentDays = 0, absentDays = 0, leaveDays = 0, halfDays = 0;
-          let totalWorkHours = 0, overtimeHours = 0, holidayWorkDays = 0, holidayWorkHours = 0;
-          
-          const basicSalary = Number(emp.salary) || 0;
-
-          // Iterate through all days of the month to calculate stats for this employee
-          for (let day = 1; day <= endDate.getDate(); day++) {
-              const currentDate = new Date(year, month - 1, day);
-              const dayOfWeek = currentDate.getDay();
-              const dateString = currentDate.toISOString().split('T')[0];
-
-              const isHoliday = holidayDates.has(dateString);
-              const isWorkingDay = workingDaysOfWeek.has(dayOfWeek) && !isHoliday;
-
-              const attendanceRecord = attendanceMap.get(dateString);
-              const empAttendance = attendanceRecord?.employees.find(e => e.employee.toString() === emp._id.toString());
-              
-              // ✅ NEW: Detailed daily calculation logic
-              if (empAttendance && empAttendance.inStatus !== 'Absent') {
-                  const dailyHours = empAttendance.workHours || 0;
-                  totalWorkHours += dailyHours;
-
-                  if (isHoliday) {
-                      holidayWorkDays++;
-                      holidayWorkHours += dailyHours;
-                  } else if (isWorkingDay) {
-                      // Calculate overtime only on normal working days
-                      const dailyOvertime = dailyHours - dailyBusinessWorkHours;
-                      if (dailyOvertime > 0) {
-                          overtimeHours += dailyOvertime;
-                      }
-
-                      // Count presence status
-                      switch (empAttendance.inStatus) {
-                          case 'On Time': case 'Late': presentDays++; break;
-                          case 'Half-Day': halfDays++; break;
-                          case 'Leave': leaveDays++; break;
-                      }
-                  }
-              } else {
-                  // Employee is absent only if it's a working day and they didn't show up
-                  if (isWorkingDay) {
-                      absentDays++;
-                  }
-              }
-          }
-          
-          return {
-              employee: emp._id,
-              businessId,
-              month,
-              year,
-              basicSalary,
-              grossSalary: basicSalary,
-              totalDeductions: 0,
-              netSalary: basicSalary,
-              paymentStatus: "pending",
-              
-              // Business-wide stats
-              totalWorkingDays: totalWorkingDaysInMonth,
-              totalBusinessHours: totalBusinessHoursInMonth,
-
-              // Employee presence stats
-              presentDays,
-              absentDays,
-              leaveDays,
-              halfDays,
-
-              // ✅ NEW: Detailed employee work hour stats
-              totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
-              overtimeHours: parseFloat(overtimeHours.toFixed(2)),
-              holidayWorkDays,
-              holidayWorkHours: parseFloat(holidayWorkHours.toFixed(2)),
-          };
-      });
-      
-      await Payroll.insertMany(newPayrollsData);
-
-      payrolls = await Payroll.find(filter)
-        .populate("employee", "name email phone role salary")
-        .populate("businessId", "businessName businessType");
+    if (existingPayrolls.length > 0) {
+      console.log(`\x1b[32m✅ [FOUND] Found ${existingPayrolls.length} existing payroll document(s).\x1b[0m`);
+      return NextResponse.json(
+        { success: true, count: existingPayrolls.length, payrolls: existingPayrolls, dataType: 'existing' },
+        { status: 200 }
+      );
     }
 
+    console.log("\x1b[33m⚠️ [ACTION] No payrolls found → Calculating attendance data.\x1b[0m");
+
+    const yearNum = parseInt(year);
+    const monthNum = parseInt(month) - 1;
+    const startDate = new Date(Date.UTC(yearNum, monthNum, 1));
+    const endDate = new Date(Date.UTC(yearNum, monthNum + 1, 0, 23, 59, 59, 999));
+    const totalWorkingDays = new Date(yearNum, monthNum + 1, 0).getDate();
+
+    let employeeFilter = { businessName: user.businessName, role: "Staff", active: true };
+    if (employeeId) {
+        employeeFilter = { _id: employeeId };
+    }
+    const employees = await Employee.find(employeeFilter).lean();
+
+    if (employees.length === 0) {
+        return NextResponse.json(
+            { success: true, count: 0, payrolls: [], msg: "No staff employees found to calculate attendance." },
+            { status: 200 }
+        );
+    }
+    
+    const monthlyAttendance = await DailyAttendance.find({
+      business: businessId,
+      date: { $gte: startDate, $lte: endDate },
+    });
+
+    // Dynamically calculate standard work hours from business settings
+    let standardWorkHoursPerDay = 8; // Default fallback value
+    const settings = await BusinessSettings.findOne({ business: businessId }).lean();
+    
+    if (settings) {
+        try {
+            const [inHour, inMinute] = settings.defaultInTime.split(':').map(Number);
+            const [outHour, outMinute] = settings.defaultOutTime.split(':').map(Number);
+            const grossWorkMinutes = (outHour * 60 + outMinute) - (inHour * 60 + inMinute);
+            const lunchMinutes = settings.lunchDurationMinutes || 0;
+            const netWorkMinutes = grossWorkMinutes - lunchMinutes;
+
+            if (netWorkMinutes > 0) {
+                standardWorkHoursPerDay = netWorkMinutes / 60;
+            }
+            console.log(`\x1b[36m⚙️ [SETTINGS] Standard work hours per day: ${standardWorkHoursPerDay.toFixed(2)}\x1b[0m`);
+        } catch (e) {
+            console.warn("\x1b[31m⚠️ [SETTINGS] Failed to parse work hours from settings, using default 8 hours.\x1b[0m", e);
+        }
+    } else {
+        console.warn("\x1b[33m⚠️ [SETTINGS] No business settings found, using default 8 work hours per day.\x1b[0m");
+    }
+
+    const employeeStats = new Map();
+    employees.forEach(emp => {
+      employeeStats.set(emp._id.toString(), {
+        presentDays: 0,
+        employeeTotalHours: 0,
+        employee: emp,
+        totalWorkingDays,
+        basicSalary: Number(emp.salary) || 0,
+        month,
+        year,
+        businessId,
+        paymentStatus: "pending_generation",
+      });
+    });
+    
+    monthlyAttendance.forEach(dailyRecord => {
+        dailyRecord.employees.forEach(attendanceEntry => {
+            const empId = attendanceEntry.employee.toString();
+            if (employeeStats.has(empId)) {
+                const stats = employeeStats.get(empId);
+                if (attendanceEntry.inStatus && attendanceEntry.inStatus !== 'Absent' && attendanceEntry.inStatus !== 'Leave') {
+                    stats.presentDays += (attendanceEntry.inStatus === 'Half-Day' ? 0.5 : 1);
+                }
+                stats.employeeTotalHours += attendanceEntry.workHours || 0;
+            }
+        });
+    });
+    
+    const generatedData = Array.from(employeeStats.values()).map(stat => {
+        const expectedHours = stat.presentDays * standardWorkHoursPerDay;
+        
+        return {
+            ...stat,
+            employeeTotalHours: parseFloat(stat.employeeTotalHours.toFixed(2)),
+            totalWorkingHours: parseFloat(expectedHours.toFixed(2))
+        };
+    });
+    
+    console.log(`\x1b[32m✅ [SUCCESS] Generated attendance data for ${generatedData.length} employee(s).\x1b[0m`);
+    
     return NextResponse.json(
-      { success: true, count: payrolls.length, payrolls },
+      { success: true, count: generatedData.length, payrolls: generatedData, dataType: 'generated' },
       { status: 200 }
     );
+
   } catch (error) {
     console.error("\x1b[31m🔥 [EXCEPTION] Error fetching payrolls\x1b[0m", error);
     return NextResponse.json(
-      { success: false, msg: "Error fetching payrolls", error: error.message },
+      { success: false, msg: "An error occurred while fetching payroll data", error: error.message },
       { status: 500 }
     );
   }
 }
 
-// ✅ UPDATE Payroll (PUT) - No changes needed
+
+// ✅ UPDATE Payroll (PUT) - No changes
 export async function PUT(req) {
   try {
     await connectDB();
-    const { id, updates } = await req.json(); // expects {id, updates:{}}
+    const { id, updates } = await req.json();
 
     const payroll = await Payroll.findByIdAndUpdate(id, updates, { new: true });
     if (!payroll) {
       return NextResponse.json({ success: false, msg: "Payroll not found" }, { status: 404 });
     }
-
     return NextResponse.json({ success: true, msg: "Payroll updated", payroll }, { status: 200 });
   } catch (error) {
     console.error(error);
@@ -239,7 +199,7 @@ export async function PUT(req) {
   }
 }
 
-// ✅ DELETE Payroll - No changes needed
+// ✅ DELETE Payroll - No changes
 export async function DELETE(req) {
   try {
     await connectDB();
@@ -254,7 +214,6 @@ export async function DELETE(req) {
     if (!deleted) {
       return NextResponse.json({ success: false, msg: "Payroll not found" }, { status: 404 });
     }
-
     return NextResponse.json({ success: true, msg: "Payroll deleted" }, { status: 200 });
   } catch (error) {
     console.error(error);

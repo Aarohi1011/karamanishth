@@ -72,6 +72,7 @@ export default function PayrollManagement() {
       // Changed to /api/payrolls
       const response = await fetch(`/api/payroll?${params.toString()}`);
       const data = await response.json();
+      console.log(data);
       
       if (data.success) {
         setPayrolls(data.payrolls || []);
