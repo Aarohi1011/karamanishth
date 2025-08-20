@@ -184,9 +184,9 @@ export const metadata = {
 
   // Basic Android PWA support using existing assets
   manifest: {
-    name: "PathShala",
-    short_name: "PathShala",
-    description: "School Management System",
+    name: "karmanishth",
+    short_name: "karmanishth",
+    description: "Employee Management System",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
