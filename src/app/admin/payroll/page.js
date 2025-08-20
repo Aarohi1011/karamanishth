@@ -1,20 +1,15 @@
 'use client';
 import { useEffect, useState } from 'react';
-// import { useRouter } from 'next/navigation'; // Removed Next.js specific import
 import { format } from 'date-fns';
-// import { auth } from '@/app/lib/auth'; // Removed Next.js specific import
 
 export const dynamic = 'force-dynamic';
 
-// Mock auth function to simulate getting user data without Next.js auth
+// Mock auth function to simulate getting user data
 const auth = async () => {
-  // In a real app, this would be your authentication logic.
-  // For this component, we'll return a mock user with a businessId.
   return {
-    businessId: '683908ae98082fdbfd2d8765' // Example business ID from your API response
+    businessId: '683908ae98082fdbfd2d8765' // Example business ID
   };
 };
-
 
 const COLORS = {
   primaryDark: '#06202B',
@@ -45,8 +40,6 @@ export default function PayrollManagement() {
     averageSalary: 0
   });
 
-  // const router = useRouter(); // Removed Next.js specific hook
-  
   useEffect(() => {
     const loadData = async () => {
       const user = await auth();
@@ -78,30 +71,30 @@ export default function PayrollManagement() {
         year: now.getFullYear()
       });
       
-      // NOTE: This fetch will likely fail in a sandboxed environment
-      // as it's trying to call a relative API path.
-      // This code assumes it's running in an environment where /api/payroll is a valid endpoint.
       const response = await fetch(`/api/payroll?${params.toString()}`);
       const data = await response.json();
       console.log(data);
       
       if (data.success) {
-        setPayrolls(data.payrolls || []);
-        // Calculate stats only on existing, paid payrolls
-        const existingPayrolls = data.dataType === 'existing' ? data.payrolls : [];
-        calculateStats(existingPayrolls);
+        // UPDATED LOGIC: Directly use the unified payrolls array from the new API response.
+        const allPayrolls = data.payrolls || [];
+        setPayrolls(allPayrolls);
+        
+        // Calculate stats based only on records that are actually paid.
+        const paidPayrolls = allPayrolls.filter(p => p.paymentStatus === 'paid');
+        calculateStats(paidPayrolls, allPayrolls.length);
       } else {
         setError(data.msg || "Failed to fetch payrolls.");
         setPayrolls([]);
       }
     } catch (err) {
-      // Since the API call will fail, we'll set a more informative error
       setError("Failed to fetch API. This is expected in a sandboxed environment. The component logic is ready.");
       console.error(err);
     } finally {
       setLoading(false);
     }
   };
+
 
   const fetchBusinesses = async () => {
     try {
@@ -169,16 +162,14 @@ export default function PayrollManagement() {
     };
   };
 
-  const calculateStats = (payrolls) => {
-    const total = payrolls.length;
-    const paidPayrolls = payrolls.filter(p => p.paymentStatus === 'paid');
+  const calculateStats = (paidPayrolls, totalCount) => {
+    const total = totalCount; // Use the count of all records (paid and pending)
     const totalAmount = paidPayrolls.reduce((sum, payroll) => sum + (payroll.netSalary || 0), 0);
     const averageSalary = paidPayrolls.length > 0 ? totalAmount / paidPayrolls.length : 0;
     setStats({ total, totalAmount, averageSalary });
   };
   
   const handleCreateAndPayPayroll = async (payrollToCreate) => {
-    // Using window.confirm as a simple replacement for a custom modal
     if (!window.confirm('This will create the payroll record and mark it as paid. Proceed?')) return;
 
     try {
@@ -292,6 +283,7 @@ export default function PayrollManagement() {
     }).format(amount || 0);
   };
 
+  // This function is now robust because the new API response always sends the full employee object.
   const getEmployeeDetails = (employeeData) => (typeof employeeData === 'object' && employeeData !== null) ? employeeData : (employees.find(e => e._id === employeeData) || {});
 
   return (
@@ -372,12 +364,14 @@ export default function PayrollManagement() {
                   {payrolls.map((payroll) => {
                     const employee = getEmployeeDetails(payroll.employee);
                     const isPaid = payroll.paymentStatus === 'paid';
+                    // This correctly identifies records that are not yet created in the DB
                     const isGenerated = payroll.paymentStatus === 'pending_generation';
                     
                     const calculated = calculateFinalSalary(payroll);
                     const displaySalary = isPaid ? payroll.netSalary : calculated.netSalary;
 
                     return (
+                      // The key logic works for both existing (_id) and generated (employee._id) records.
                       <tr key={payroll._id || employee._id} className="hover:bg-opacity-50 transition-colors" style={{ backgroundColor: COLORS.accent }}>
                         <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium" style={{ color: COLORS.primaryDark }}>{employee?.name || 'N/A'}</div>
@@ -390,9 +384,9 @@ export default function PayrollManagement() {
                             {isPaid ? (
                                 <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Paid</span>
                             ) : isGenerated ? (
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Generated</span>
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Pending Generation</span>
                             ) : (
-                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pending Payment</span>
                             )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
@@ -404,6 +398,7 @@ export default function PayrollManagement() {
                                 <button onClick={() => handleMarkAsPaid(payroll._id)} className="px-3 py-1 text-xs rounded-md shadow-sm text-white hover:opacity-90" style={{ backgroundColor: COLORS.primary }}>Pay</button>
                               )
                           )}
+                          {/* The delete button only shows for records that exist in the DB (have an _id) */}
                           {payroll._id && (
                             <button onClick={() => handleDeletePayroll(payroll._id)} className="hover:underline" style={{ color: COLORS.secondary }}>Delete</button>
                           )}
