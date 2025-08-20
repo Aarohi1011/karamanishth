@@ -10,7 +10,8 @@ import {
   MdChevronLeft,
   MdChevronRight,
   MdMenu,
-  MdClose
+  MdClose,
+  MdHowToReg
 } from "react-icons/md";
 import Link from 'next/link';
 
