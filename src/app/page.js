@@ -24,13 +24,13 @@ export default function Home() {
       </Head>
 
       {/* Navigation */}
-      <nav className="bg-[#06202B] text-[#F5EEDD]">
+      <nav className="bg-[#06202B] text-[#F5EEDD] sticky top-0 z-50 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <Image 
-                  src="/logo.jpg" 
+                  src="/favicon-196.png" 
                   alt="Karmanishth Logo" 
                   width={40}
                   height={40}
@@ -46,7 +46,7 @@ export default function Home() {
               <a href="#how-it-works" className="hover:text-[#7AE2CF] transition-colors">How It Works</a>
               <a href="#pricing" className="hover:text-[#7AE2CF] transition-colors">Pricing</a>
               <a href="#contact" className="hover:text-[#7AE2CF] transition-colors">Contact</a>
-              <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-[#077A7D] hover:bg-[#065E60] text-white px-4 py-2 rounded-md transition-colors">
+              <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-[#077A7D] hover:bg-[#065E60] text-white px-4 py-2 rounded-md transition-colors shadow-lg hover:shadow-teal-900/30">
                 Get Started
               </Link>
             </div>
@@ -86,8 +86,14 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative bg-[#06202B] text-[#F5EEDD]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+      <section className="relative bg-[#06202B] text-[#F5EEDD] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-[#06202B] to-[#0D3A4A] opacity-90"></div>
+        <div className="absolute top-0 right-0 -mt-16 mr-20 opacity-10">
+          <svg width="400" height="400" viewBox="0 0 200 200">
+            <path fill="#7AE2CF" d="M45.1,-58.2C63.4,-47.1,85.5,-40.5,93.4,-25.2C101.3,-9.9,95.1,14.2,82.2,32.4C69.3,50.6,49.8,62.9,29.9,70.7C10,78.5,-10.3,81.8,-26.4,75.8C-42.5,69.8,-54.4,54.5,-64.1,37.3C-73.8,20.1,-81.3,1.1,-77.8,-15.3C-74.3,-31.7,-59.8,-45.5,-43.9,-57C-28,-68.5,-10.7,-77.7,3.7,-82.2C18.1,-86.7,36.2,-86.5,45.1,-58.2Z" transform="translate(100 100)" />
+          </svg>
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-6">
@@ -97,18 +103,18 @@ export default function Home() {
                 Streamline your workforce management with our intuitive QR-based attendance system. Get real-time insights and simplified tracking for better attendance management.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-[#077A7D] hover:bg-[#065E60] text-white px-6 py-3 rounded-md transition-colors font-medium">
+                <button className="bg-[#077A7D] hover:bg-[#065E60] text-white px-6 py-3 rounded-md transition-colors font-medium shadow-lg hover:shadow-teal-900/30">
                   <Link href='/login'>
                     Login
                   </Link>
                 </button>
-                <Link href="/signup" className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium text-center">
+                <Link href="/signup" className="border-2 border-[#7AE2CF] text-[#7AE2CF] hover:bg-[#7AE2CF] hover:text-[#06202B] px-6 py-3 rounded-md transition-colors font-medium text-center shadow-lg hover:shadow-teal-900/30">
                   Get Started
                 </Link>
               </div>
             </div>
             <div className="relative">
-              <div className="bg-[#077A7D] rounded-2xl p-2 transform rotate-1">
+              <div className="bg-[#077A7D] rounded-2xl p-2 transform rotate-1 shadow-2xl">
                 <div className="bg-[#06202B] rounded-xl overflow-hidden border-2 border-[#7AE2CF] transform -rotate-1">
                   <Image 
                     src="/dashboard-preview.jpg" 
@@ -120,7 +126,7 @@ export default function Home() {
                   />
                 </div>
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-[#7AE2CF] p-3 rounded-lg shadow-lg">
+              <div className="absolute -bottom-6 -left-6 bg-gradient-to-r from-[#7AE2CF] to-[#4DC6B2] p-3 rounded-lg shadow-lg animate-pulse">
                 <div className="flex items-center">
                   <div className="bg-[#06202B] p-2 rounded-full">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,8 +134,21 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="ml-2 text-[#06202B]">
-                    <p className="font-bold">98%</p>
-                    <p className="text-sm">Accuracy</p>
+                    <p className="font-bold">99.9%</p>
+                    <p className="text-sm">High Accuracy</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -top-6 -right-6 bg-gradient-to-r from-[#077A7D] to-[#065E60] p-3 rounded-lg shadow-lg">
+                <div className="flex items-center">
+                  <div className="bg-[#06202B] p-2 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-2 text-[#F5EEDD]">
+                    <p className="font-bold text-sm">Real-time</p>
+                    <p className="text-xs">Tracking</p>
                   </div>
                 </div>
               </div>
@@ -151,9 +170,9 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
@@ -166,9 +185,9 @@ export default function Home() {
             </div>
             
             {/* Feature 2 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
@@ -181,9 +200,9 @@ export default function Home() {
             </div>
             
             {/* Feature 3 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
@@ -196,9 +215,9 @@ export default function Home() {
             </div>
             
             {/* Feature 4 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
@@ -211,9 +230,9 @@ export default function Home() {
             </div>
             
             {/* Feature 5 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
@@ -226,9 +245,9 @@ export default function Home() {
             </div>
             
             {/* Feature 6 */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF]">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
               <div className="p-6">
-                <div className="bg-[#06202B] w-12 h-12 rounded-full flex items-center justify-center mb-4">
+                <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] w-12 h-12 rounded-full flex items-center justify-center mb-4">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -244,7 +263,7 @@ export default function Home() {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-20 bg-[#06202B] text-[#F5EEDD]">
+      <section id="how-it-works" className="py-20 bg-gradient-to-b from-[#06202B] to-[#0D3A4A] text-[#F5EEDD]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">How Karmanishth Works</h2>
@@ -255,11 +274,11 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Step 1 */}
-            <div className="relative">
-              <div className="absolute -left-4 md:-left-6 top-0 bg-[#7AE2CF] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl">
+            <div className="relative group">
+              <div className="absolute -left-4 md:-left-6 top-0 bg-gradient-to-r from-[#7AE2CF] to-[#4DC6B2] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl z-10 group-hover:scale-110 transition-transform">
                 1
               </div>
-              <div className="bg-[#077A7D] rounded-xl p-6 pl-12 md:pl-14 h-full">
+              <div className="bg-gradient-to-b from-[#077A7D] to-[#065E60] rounded-xl p-6 pl-12 md:pl-14 h-full group-hover:shadow-xl transition-all duration-300">
                 <h3 className="text-xl font-bold mb-3">Set Up Your Account</h3>
                 <p className="text-gray-200">
                   Create your company account, add employees, and generate unique QR codes for each location.
@@ -268,11 +287,11 @@ export default function Home() {
             </div>
             
             {/* Step 2 */}
-            <div className="relative">
-              <div className="absolute -left-4 md:-left-6 top-0 bg-[#7AE2CF] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl">
+            <div className="relative group">
+              <div className="absolute -left-4 md:-left-6 top-0 bg-gradient-to-r from-[#7AE2CF] to-[#4DC6B2] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl z-10 group-hover:scale-110 transition-transform">
                 2
               </div>
-              <div className="bg-[#077A7D] rounded-xl p-6 pl-12 md:pl-14 h-full">
+              <div className="bg-gradient-to-b from-[#077A7D] to-[#065E60] rounded-xl p-6 pl-12 md:pl-14 h-full group-hover:shadow-xl transition-all duration-300">
                 <h3 className="text-xl font-bold mb-3">Employees Scan to Check In/Out</h3>
                 <p className="text-gray-200">
                   Employees use their smartphones to scan the QR code when arriving and leaving work.
@@ -281,11 +300,11 @@ export default function Home() {
             </div>
             
             {/* Step 3 */}
-            <div className="relative">
-              <div className="absolute -left-4 md:-left-6 top-0 bg-[#7AE2CF] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl">
+            <div className="relative group">
+              <div className="absolute -left-4 md:-left-6 top-0 bg-gradient-to-r from-[#7AE2CF] to-[#4DC6B2] text-[#06202B] w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-bold text-lg md:text-xl z-10 group-hover:scale-110 transition-transform">
                 3
               </div>
-              <div className="bg-[#077A7D] rounded-xl p-6 pl-12 md:pl-14 h-full">
+              <div className="bg-gradient-to-b from-[#077A7D] to-[#065E60] rounded-xl p-6 pl-12 md:pl-14 h-full group-hover:shadow-xl transition-all duration-300">
                 <h3 className="text-xl font-bold mb-3">Get Attendance Insights</h3>
                 <p className="text-gray-200">
                   View real-time attendance data, generate reports, and manage your workforce efficiently.
@@ -308,7 +327,7 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Free Plan */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] transform hover:scale-105 transition-transform">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-[#7AE2CF] transform hover:scale-105 transition-transform duration-300">
               <div className="p-6">
                 <h3 className="text-xl font-bold text-[#06202B] mb-2">Free Plan (14 Days Trial)</h3>
                 <div className="mb-6">
@@ -372,20 +391,20 @@ export default function Home() {
                   </li>
                   <li className="flex items-start">
                     <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 极l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Attendance Support</span>
                   </li>
                 </ul>
-                <Link href="https://karamanishth.sharmaindustry.in/signup" className="w-full bg-[#06202B] hover:bg-[#0D3A4A] text-white py-3 rounded-md transition-colors block text-center">
+                <Link href="https://karamanishth.sharmaindustry.in/signup" className="w-full bg-gradient-to-r from-[#06202B] to-[#0D3A4A] hover:from-[#0D3A4A] hover:to-[#06202B] text-white py-3 rounded-md transition-all duration-300 shadow-lg hover:shadow-teal-900/30 block text-center">
                   Start Free Trial
                 </Link>
               </div>
             </div>
             
             {/* Paid Plan */}
-            <div className="bg-white rounded-xl shadow-xl overflow-hidden border-2 border-[#077A7D] transform hover:scale-105 transition-transform relative">
-              <div className="absolute top-0 right-0 bg-[#077A7D] text-white text-xs font-bold px-3 py-1 transform translate-x-2 -translate-y-2 rotate-12">
+            <div className="bg-white rounded-xl shadow-xl overflow-hidden border-2 border-[#077A7D] transform hover:scale-105 transition-transform duration-300 relative">
+              <div className="absolute top-0 right-0 bg-gradient-to-r from-[#077A7D] to-[#065E60] text-white text-xs font-bold px-3 py-1 transform translate-x-2 -translate-y-2 rotate-12 shadow-lg">
                 BEST VALUE
               </div>
               <div className="p-6">
@@ -399,30 +418,30 @@ export default function Home() {
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-start">
                     <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414极-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 极.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Unlimited Employees</span>
                   </li>
                   <li className="flex items-start">
                     <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 极 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Geolocation-Based Attendance</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 极0" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Advanced Attendance Analysis</span>
                   </li>
                   <li className="flex items-start">
                     <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0极" clipRule="evenodd" />
                     </svg>
                     <span>Monthly & Weekly Reports</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/s极" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Staff Management Dashboard</span>
@@ -434,7 +453,7 @@ export default function Home() {
                     <span>Shifts and Schedule Management</span>
                   </li>
                   <li className="flex items-start">
-                    <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <svg className="h-5 w-5 text-[#7AE2极F] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Leave and Overtime Tracking</span>
@@ -447,7 +466,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start">
                     <svg className="h-5 w-5 text-[#7AE2CF] mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 极 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586极7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                     <span>Smart Alerts</span>
                   </li>
@@ -458,7 +477,7 @@ export default function Home() {
                     <span>Priority Attendance Support</span>
                   </li>
                 </ul>
-                <Link href="https://karamanishth.sharmaindustry.in/signup" className="w-full bg-[#077A7D] hover:bg-[#065E60] text-white py-3 rounded-md transition-colors font-bold block text-center">
+                <Link href="https://karamanishth.sharmaindustry.in/signup" className="w-full bg-gradient-to-r from-[#077A7D] to-[#065E60] hover:from-[#065E60] hover:to-[#077A7D] text-white py-3 rounded-md transition-all duration-300 font-bold shadow-lg hover:shadow-teal-900/30 block text-center">
                   Subscribe Now
                 </Link>
               </div>
@@ -468,13 +487,13 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-[#06202B] text-[#F5EEDD]">
+      <section className="py-20 bg-gradient-to-r from-[#06202B] to-[#0D3A4A] text-[#F5EEDD]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Simplify Your Attendance Management?</h2>
+          <h2 className="text-3极l md:text-4xl font-bold mb-6">Ready to Simplify Your Attendance Management?</h2>
           <p className="text-xl mb-8 max-w-3xl mx-auto">
             Join businesses that trust Karmanishth for accurate, efficient employee attendance tracking.
           </p>
-          <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-[#7AE2CF] hover:bg-[#5ECCB7] text-[#06202B] px-8 py-4 rounded-md transition-colors font-bold text-lg inline-block">
+          <Link href="https://karamanishth.sharmaindustry.in/signup" className="bg-gradient-to-r from-[#7AE2CF] to-[#4DC6B2] hover:from-[#4DC6B2] hover:to-[#7AE2CF] text-[#06202B] px-8 py-4 rounded-md transition-all duration-300 font-bold text-lg inline-block shadow-lg hover:shadow-teal-900/30">
             Start Your Free 14-Day Trial
           </Link>
           <p className="mt-4 text-gray-300">No credit card required. Cancel anytime.</p>
@@ -492,9 +511,9 @@ export default function Home() {
               </p>
               <div className="space-y-4">
                 <div className="flex items-start">
-                  <div className="bg-[#06202B] p-2 rounded-full flex-shrink-0">
+                  <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] p-2 rounded-full flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 极 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -503,9 +522,9 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <div className="bg-[#06202B] p-2 rounded-full flex-shrink-0">
+                  <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] p-2 rounded-full flex-shrink-0">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502极4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -514,10 +533,10 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex items-start">
-                  <div className="bg-[#06202B] p-2 rounded-full flex-shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7AE2CF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="bg-gradient-to-r from-[#06202B] to-[#0D3A4A] p-2 rounded-full flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#7AE2CF]" fill="none" viewBox="0 极 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0极" />
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -540,7 +559,7 @@ export default function Home() {
                     required
                   />
                 </div>
-                <div className="mb-4">
+                <div className极="mb-4">
                   <label htmlFor="email" className="block text-gray-700 mb-2">Email</label>
                   <input
                     type="email"
@@ -565,13 +584,13 @@ export default function Home() {
                   <textarea
                     id="message"
                     rows="4"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#7AE2CF]"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2极 focus:ring-[#7AE2CF]"
                     required
                   ></textarea>
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-[#077A7D] hover:bg-[#065E60] text-white py-3 rounded-md transition-colors font-medium"
+                  className="w-full bg-gradient-to-r from-[#077A7D] to-[#065E60] hover:from-[#065E60] hover:to-[#077A7D] text-white py-3 rounded-md transition-all duration-300 font-medium shadow-lg hover:shadow-teal-900/30"
                 >
                   Send Message
                 </button>
