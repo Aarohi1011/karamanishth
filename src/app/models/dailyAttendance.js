@@ -57,6 +57,7 @@ DailyAttendanceSchema.index({ 'employees.employee': 1 });
 
 // Pre-save calculation logic
 // Pre-save calculation logic
+// Pre-save calculation logic
 DailyAttendanceSchema.pre('save', function (next) {
   let presentCount = 0;
   let absentCount = 0;
@@ -64,24 +65,27 @@ DailyAttendanceSchema.pre('save', function (next) {
   let earlyLeaveCount = 0;
 
   this.employees.forEach(emp => {
-    // Calculate work hours if both inTime & outTime exist
+    // ✅ Calculate work hours if both inTime & outTime exist
     if (emp.inTime && emp.outTime) {
       const diffInMs = emp.outTime - emp.inTime;
       emp.workHours = parseFloat((diffInMs / (1000 * 60 * 60)).toFixed(2));
     }
 
-    // Only set statuses if not already set
+    // ✅ Default statuses if missing
     if (!emp.inStatus) emp.inStatus = 'Absent';
     if (!emp.outStatus) emp.outStatus = 'Absent';
 
-    // Counting stats
-    if (emp.inStatus !== 'Absent' && emp.outStatus !== 'Absent') {
+    // ✅ Present if employee has an inStatus other than Absent
+    if (emp.inStatus !== 'Absent') {
       presentCount++;
-    }
-    if (emp.inStatus === 'Absent' || emp.outStatus === 'Absent') {
+    } else {
       absentCount++;
     }
+
+    // ✅ Late arrival tracking
     if (emp.inStatus === 'Late') lateCount++;
+
+    // ✅ Early leave tracking
     if (emp.outStatus === 'Early Leave') earlyLeaveCount++;
   });
 
@@ -92,6 +96,7 @@ DailyAttendanceSchema.pre('save', function (next) {
 
   next();
 });
+
 
 
 export const DailyAttendance =
