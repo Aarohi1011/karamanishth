@@ -121,7 +121,8 @@ const DailyAttendancePage = () => {
         const inStatusLower = emp.inStatus.toLowerCase()
         if (inStatusLower === 'late') {
           status = 'late'
-        } else if (inStatusLower === 'present') {
+        // ✨ **CORRECTION:** Check for 'on time' in addition to 'present'
+        } else if (inStatusLower === 'present' || inStatusLower === 'on time') {
           status = 'present'
         } else if (inStatusLower === 'on leave') {
           status = 'on leave'
