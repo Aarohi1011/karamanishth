@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import mongoose from "mongoose";
+import { DailyAttendance } from "@/app/models/dailyAttendance";
 import { Holiday } from "@/app/models/holiday";
 import { Employee } from "@/app/models/employee";
 import connectDB from "@/app/lib/dbconnect";
 import { auth } from "@/app/lib/auth";
-import { DailyAttendance } from "@/app/models/dailyAttendance";
 
 export async function GET() {
   try {
@@ -38,7 +38,6 @@ export async function GET() {
 }
 
 
-// ✅ Utility: normalize date to start of day
 function normalizeDate(date) {
   const d = new Date(date);
 
@@ -52,7 +51,6 @@ function normalizeDate(date) {
     normalized.getDate()
   ));
 }
-
 
 export async function POST(req) {
   try {
