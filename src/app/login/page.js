@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,13 +65,15 @@ const Login = () => {
       
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <svg className="w-16 h-16 text-[#7AE2CF]" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M19.4 15C19.2669 15.3016 19.227 15.6363 19.2849 15.9606C19.3428 16.2849 19.4962 16.5844 19.725 16.8199C20.1075 17.2099 20.6988 17.2305 21.1054 16.8687C21.8741 16.1969 22.5 15.3401 22.5 14.3947C22.5 13.4494 21.8741 12.5926 21.1054 11.9208C20.6988 11.559 20.1075 11.5796 19.725 11.9696C19.4962 12.2051 19.3428 12.5046 19.2849 12.8289C19.227 13.1532 19.2669 13.4879 19.4 13.7895" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M4.6 15C4.73314 15.3016 4.77301 15.6363 4.71511 15.9606C4.65721 16.2849 4.50381 16.5844 4.275 16.8199C3.89254 17.2099 3.30122 17.2305 2.89459 16.8687C2.12589 16.1969 1.5 15.3401 1.5 14.3947C1.5 13.4494 2.12589 12.5926 2.89459 11.9208C3.30122 11.559 3.89254 11.5796 4.275 11.9696C4.50381 12.2051 4.65721 12.5046 4.71511 12.8289C4.77301 13.1532 4.73314 13.4879 4.6 13.7895" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M15 4.6C15.3016 4.73314 15.6363 4.77301 15.9606 4.71511C16.2849 4.65721 16.5844 4.50381 16.8199 4.275C17.2099 3.89254 17.2305 3.30122 16.8687 2.89459C16.1969 2.12589 15.3401 1.5 14.3947 1.5C13.4494 1.5 12.5926 2.12589 11.9208 2.89459C11.559 3.30122 11.5796 3.89254 11.9696 4.275C12.2051 4.50381 12.5046 4.65721 12.8289 4.71511C13.1532 4.77301 13.4879 4.73314 13.7895 4.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M15 19.4C15.3016 19.2669 15.6363 19.227 15.9606 19.2849C16.2849 19.3428 16.5844 19.4962 16.8199 19.725C17.2099 20.1075 17.2305 20.6988 16.8687 21.1054C16.1969 21.8741 15.3401 22.5 14.3947 22.5C13.4494 22.5 12.5926 21.8741 11.9208 21.1054C11.559 20.6988 11.5796 20.1075 11.9696 19.725C12.2051 19.4962 12.5046 19.3428 12.8289 19.2849C13.1532 19.227 13.4879 19.2669 13.7895 19.4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          {/* Replaced the SVG with your logo */}
+          <div className="w-16 h-16 relative">
+            <Image
+              src="/favicon-196.png"
+              alt="Company Logo"
+              fill
+              className="object-contain"
+            />
+          </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-[#F5EEDD]">
           Login
@@ -173,8 +177,8 @@ const Login = () => {
               >
                 {isLoading ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 极速4">
+                      <circle className="opacity-25" cx="12" cy="12" r="极速0" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Signing in...
