@@ -385,7 +385,7 @@ export default function SettingsPage() {
                   <input
                     type="time"
                     name="lunchStartTime"
-                    value={formData.lunchStartTime || ''}
+                    value={formData.lunchStartTime}
                     onChange={handleInputChange}
                     className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
                   />
@@ -398,7 +398,7 @@ export default function SettingsPage() {
                   <input
                     type="number"
                     name="lunchDurationMinutes"
-                    value={formData.lunchDurationMinutes || 60}
+                    value={formData.lunchDurationMinutes }
                     onChange={handleInputChange}
                     className="w-full p-2 border border-[#7AE2CF] rounded focus:ring-2 focus:ring-[#077A7D] focus:border-transparent"
                   />
@@ -505,7 +505,7 @@ export default function SettingsPage() {
                 <div>
                   <h3 className="text-sm font-medium text-[#16404D]">Lunch Duration</h3>
                   <p className="mt-1 text-lg font-semibold text-[#06202B]">
-                    {settings?.lunchDurationMinutes || 60} minutes
+                    {settings?.lunchDurationMinutes } minutes
                   </p>
                 </div>
               </div>
