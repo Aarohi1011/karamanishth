@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react'
 import { FiDownload, FiFilter, FiSearch, FiChevronDown, FiChevronUp, FiCheckCircle, FiXCircle, FiClock, FiArrowLeft, FiCalendar } from 'react-icons/fi'
 import { useRouter } from 'next/navigation'
 import { auth } from '@/app/lib/auth'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const DailyAttendancePage = () => {
   const router = useRouter()
@@ -223,6 +225,82 @@ const DailyAttendancePage = () => {
     document.body.removeChild(link)
   }
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add header with company info and date
+    doc.setFontSize(20);
+    doc.setTextColor(40, 100, 115); // #286473 - dark blue-green
+    doc.text('DAILY ATTENDANCE REPORT', 105, 20, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Date: ${new Date(selectedDate).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })}`, 105, 30, { align: 'center' });
+    
+    // Add summary statistics
+    doc.setFontSize(11);
+    doc.setTextColor(40, 40, 40);
+    doc.text(`Total Employees: ${employees.length}`, 20, 45);
+    doc.text(`Present: ${attendanceData?.totalPresent || 0}`, 70, 45);
+    doc.text(`Absent: ${attendanceData?.totalAbsent || 0}`, 110, 45);
+    doc.text(`Late: ${attendanceData?.totalLateArrivals || 0}`, 145, 45);
+    
+    // Prepare table data
+    const tableData = filteredEmployees.map(emp => [
+      emp.name,
+      emp.department,
+      emp.position,
+      emp.status.charAt(0).toUpperCase() + emp.status.slice(1),
+      emp.checkIn,
+      emp.checkOut,
+      `${emp.workHours}h`
+    ]);
+    
+    // Create the table
+    autoTable(doc, {
+      head: [['Name', 'Department', 'Position', 'Status', 'Check In', 'Check Out', 'Work Hours']],
+      body: tableData,
+      startY: 55,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [40, 100, 115], // #286473 - dark blue-green
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3,
+        overflow: 'linebreak'
+      },
+      columnStyles: {
+        0: { cellWidth: 30 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 25 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 15 }
+      },
+      margin: { top: 55 }
+    });
+    
+    // Add footer with generation date
+    const footerY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 105, footerY, { align: 'center' });
+    
+    // Save the PDF
+    doc.save(`attendance_report_${selectedDate}.pdf`);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5EEDD] p-4 md:p-6 flex items-center justify-center">
@@ -305,12 +383,20 @@ const DailyAttendancePage = () => {
                 <FiFilter className="text-[#16404D]" />
               </div>
             </div>
-            <button
-              onClick={downloadCSV}
-              className="flex items-center justify-center gap-1 md:gap-2 bg-[#077A7D] hover:bg-[#16404D] text-white px-3 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base"
-            >
-              <FiDownload size={16} /> <span>Export</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={downloadCSV}
+                className="flex items-center justify-center gap-1 md:gap-2 bg-[#077A7D] hover:bg-[#16404D] text-white px-3 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base"
+              >
+                <FiDownload size={16} /> <span>CSV</span>
+              </button>
+              <button
+                onClick={downloadPDF}
+                className="flex items-center justify-center gap-1 md:gap-2 bg-[#DDA853] hover:bg-[#c09548] text-[#06202B] font-medium px-3 md:px-4 py-2 rounded-lg transition-colors text-sm md:text-base"
+              >
+                <FiDownload size={16} /> <span>PDF</span>
+              </button>
+            </div>
           </div>
         </div>
 

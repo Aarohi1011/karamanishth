@@ -9,6 +9,7 @@ const EmployeeManagement = () => {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingEmployee, setEditingEmployee] = useState(null); // Track which employee is being edited
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -105,6 +106,7 @@ const EmployeeManagement = () => {
   // Navigate to edit page
   const handleEditClick = (employeeId, e) => {
     e.stopPropagation(); // Prevent triggering the row click
+    setEditingEmployee(employeeId); // Set the employee being edited
     router.push(`/admin/employee_management/${employeeId}`);
   };
 
@@ -226,19 +228,18 @@ const EmployeeManagement = () => {
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
                             <button 
-                              className="text-[#7AE2CF] hover:text-[#5ac7b3]"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEmployeeClick(employee._id);
-                              }}
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                            </button>
-                            <button 
                               className="text-[#DDA853] hover:text-[#c09548]"
                               onClick={(e) => handleEditClick(employee._id, e)}
+                              disabled={editingEmployee === employee._id}
                             >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                              {editingEmployee === employee._id ? (
+                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                              ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                              )}
                             </button>
                           </div>
                         </td>
@@ -301,22 +302,21 @@ const EmployeeManagement = () => {
 
                     <div className="border-t border-[#0A5560] pt-4 mt-4 flex justify-end gap-3">
                         <button 
-                          className="text-[#7AE2CF] hover:text-[#5ac7b3] p-2 rounded-full hover:bg-[#16404D]"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEmployeeClick(employee._id);
-                          }}
-                        >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        </button>
-                        <button 
                           className="text-[#DDA853] hover:text-[#c09548] p-2 rounded-full hover:bg-[#16404D]"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleEditClick(employee._id, e);
                           }}
+                          disabled={editingEmployee === employee._id}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                          {editingEmployee === employee._id ? (
+                            <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                          )}
                         </button>
                     </div>
                   </div>
