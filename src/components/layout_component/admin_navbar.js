@@ -45,7 +45,7 @@ export default function Admin_Navbar({
             <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-[#DDA853]"></span>
           </button>
           
-          <Link href="/employee/Profile">
+          <Link href="/admin/Profile">
             <div className="flex items-center gap-2">
               <FaUserCircle className="h-6 w-6 text-[#077A7D] hover:text-[#7AE2CF] transition" />
               <span className="hidden md:inline text-sm font-medium text-[#16404D]">Admin</span>
