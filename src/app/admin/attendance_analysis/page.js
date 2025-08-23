@@ -11,9 +11,6 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from 'recharts';
 import { auth } from '@/app/lib/auth';
 
@@ -61,34 +58,6 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Enhanced pie chart tooltip
-const CustomPieTooltip = ({ active, payload }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-gradient-to-br from-white to-gray-50 p-4 border border-gray-200 rounded-lg shadow-xl">
-        <div className="flex items-center mb-2">
-          <div 
-            className="w-4 h-4 rounded-full mr-2" 
-            style={{ backgroundColor: data.color }}
-          ></div>
-          <p className="font-bold" style={{ color: data.color }}>
-            {data.name}
-          </p>
-        </div>
-        <p className="text-sm text-gray-600 mb-2">{data.description}</p>
-        <p className="text-sm font-semibold">
-          <span className="text-lg" style={{ color: data.color }}>
-            {data.value.toFixed(1)}%
-          </span>
-          <span className="text-gray-500 ml-2">({data.count} employees)</span>
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
-
 // Custom legend for charts
 const CustomLegend = ({ payload }) => {
   return (
@@ -106,18 +75,17 @@ const CustomLegend = ({ payload }) => {
   );
 };
 
-// Radial progress component for individual metrics
-const RadialProgress = ({ value, max, color, label, icon }) => {
-  const percentage = (value / max) * 100;
+// Enhanced Radial Progress component with animation
+const RadialProgress = ({ value, max, color, icon, percentage, animationDelay = 0 }) => {
   const circumference = 2 * Math.PI * 40;
   
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-24 h-24">
+      <div className="relative w-28 h-28">
         <svg className="w-full h-full" viewBox="0 0 100 100">
           {/* Background circle */}
           <circle
-            className="text-gray-200"
+            className="text-gray-100"
             strokeWidth="8"
             stroke="currentColor"
             fill="transparent"
@@ -125,9 +93,9 @@ const RadialProgress = ({ value, max, color, label, icon }) => {
             cx="50"
             cy="50"
           />
-          {/* Progress circle */}
+          {/* Progress circle with animation */}
           <circle
-            className="transition-all duration-500 ease-in-out"
+            className="transition-all duration-1000 ease-out"
             strokeWidth="8"
             strokeDasharray={circumference}
             strokeDashoffset={circumference - (percentage / 100) * circumference}
@@ -138,15 +106,17 @@ const RadialProgress = ({ value, max, color, label, icon }) => {
             cx="50"
             cy="50"
             transform="rotate(-90 50 50)"
+            style={{
+              transitionDelay: `${animationDelay}ms`
+            }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-2xl font-bold" style={{ color }}>{value}</span>
-          <span className="text-xs text-gray-500">{label}</span>
+          <span className="text-3xl font-bold" style={{ color }}>{value}</span>
         </div>
       </div>
-      <div className="mt-2 text-center">
-        <span className="text-2xl">{icon}</span>
+      <div className="mt-3 text-center">
+        <span className="text-3xl">{icon}</span>
       </div>
     </div>
   );
@@ -174,76 +144,130 @@ const MonthSelector = ({ selectedDate, onChange }) => {
   );
 };
 
-const SummaryCards = ({ summary, workingDays, holidays }) => {
+const SummaryCards = ({ summary, workingDays, holidays, totalDays }) => {
+  const [animatedValues, setAnimatedValues] = useState({
+    workingDays: 0,
+    holidays: 0,
+    workingDaysPercentage: 0,
+    holidaysPercentage: 0
+  });
+
+  useEffect(() => {
+    // Animate the values when component mounts or values change
+    const workingDaysPercentage = totalDays > 0 ? (workingDays / totalDays) * 100 : 0;
+    const holidaysPercentage = totalDays > 0 ? (holidays / totalDays) * 100 : 0;
+    
+    const timer = setTimeout(() => {
+      setAnimatedValues({
+        workingDays,
+        holidays,
+        workingDaysPercentage,
+        holidaysPercentage
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [workingDays, holidays, totalDays]);
+
+  // Enhanced cards with more information
   const cards = [
     {
       title: 'Working Days',
-      value: workingDays,
+      value: animatedValues.workingDays,
+      percentage: animatedValues.workingDaysPercentage,
       color: COLORS.primary,
       icon: '📅',
-      max: 31
+      description: 'Days employees are expected to work',
+      trend: '+2% from last month',
+      max: totalDays || 31
     },
     {
       title: 'Holidays',
-      value: holidays,
+      value: animatedValues.holidays,
+      percentage: animatedValues.holidaysPercentage,
       color: COLORS.accent,
       icon: '🎉',
-      max: 10
-    },
-    {
-      title: 'Present',
-      value: summary.totalPresent,
-      color: COLORS.primaryLight,
-      icon: '✅',
-      max: workingDays * 50 // Assuming max 50 employees
-    },
-    {
-      title: 'Absent',
-      value: summary.totalAbsent,
-      color: COLORS.secondaryDark,
-      icon: '❌',
-      max: workingDays * 50
-    },
-    {
-      title: 'Late Arrivals',
-      value: summary.totalLate,
-      color: COLORS.secondaryLight,
-      icon: '⏰',
-      max: workingDays * 50
-    },
-    {
-      title: 'Half Days',
-      value: summary.totalHalfDay,
-      color: COLORS.primaryDark,
-      icon: '½',
-      max: workingDays * 50
+      description: 'Official holidays this month',
+      trend: '1 more than last month',
+      max: totalDays || 31
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       {cards.map((card, index) => (
         <div
           key={index}
-          className="bg-white rounded-xl shadow-sm p-4 border-l-4 flex flex-col"
-          style={{ borderLeftColor: card.color }}
+          className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-xl"
         >
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-lg">{card.icon}</span>
-            <h3 className="text-xs font-medium text-gray-500 text-right">{card.title}</h3>
+          <div 
+            className="h-2 w-full" 
+            style={{ backgroundColor: card.color }}
+          ></div>
+          
+          <div className="p-6">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700">{card.title}</h3>
+                <p className="text-sm text-gray-500 mt-1">{card.description}</p>
+              </div>
+              <span className="text-4xl">{card.icon}</span>
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-shrink-0">
+                <RadialProgress 
+                  value={card.value} 
+                  max={card.max} 
+                  color={card.color}
+                  icon={card.icon}
+                  percentage={card.percentage}
+                  animationDelay={index * 200}
+                />
+              </div>
+              
+              <div className="flex-1">
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-medium text-gray-600">Percentage of month</span>
+                      <span className="text-lg font-bold" style={{ color: card.color }}>
+                        {card.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="h-2.5 rounded-full transition-all duration-1000 ease-out" 
+                        style={{ 
+                          width: `${card.percentage}%`,
+                          backgroundColor: card.color,
+                          transitionDelay: `${index * 200}ms`
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-sm text-gray-600 flex items-center">
+                      <span className="mr-2">📈</span>
+                      {card.trend}
+                    </p>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</p>
+                      <p className="text-xs text-gray-500">Count</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-gray-700">{card.max}</p>
+                      <p className="text-xs text-gray-500">Total Days</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="mt-2 flex justify-center">
-            <RadialProgress 
-              value={card.value} 
-              max={card.max} 
-              color={card.color}
-              label={card.title}
-              icon={card.icon}
-            />
-          </div>
-          <p className="text-center text-xl font-bold mt-2" style={{ color: card.color }}>
-            {card.value}
-          </p>
         </div>
       ))}
     </div>
@@ -372,199 +396,6 @@ const AttendanceTrendChart = ({ dailyStats }) => {
           Scroll horizontally to view all days
         </p>
       )}
-    </div>
-  );
-};
-
-const StatusDistributionChart = ({ summary, totalEmployees, workingDays }) => {
-  const [isMobile, setIsMobile] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(null);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Calculate percentages safely
-  const totalPossible = workingDays * (totalEmployees || 1);
-  const presentPercentage = ((summary?.totalPresent || 0) / totalPossible) * 100;
-  const latePercentage = ((summary?.totalLate || 0) / totalPossible) * 100;
-  const halfDayPercentage = (((summary?.totalHalfDay || 0) * 0.5) / totalPossible) * 100;
-  const absentPercentage = ((summary?.totalAbsent || 0) / totalPossible) * 100;
-
-  const data = [
-    { 
-      name: 'Present', 
-      value: presentPercentage, 
-      color: COLORS.primaryLight,
-      count: summary?.totalPresent || 0,
-      description: 'Employees present on time'
-    },
-    { 
-      name: 'Late', 
-      value: latePercentage, 
-      color: COLORS.secondaryLight,
-      count: summary?.totalLate || 0,
-      description: 'Employees who arrived late'
-    },
-    { 
-      name: 'Half Day', 
-      value: halfDayPercentage, 
-      color: COLORS.primaryDark,
-      count: summary?.totalHalfDay || 0,
-      description: 'Employees worked half days'
-    },
-    { 
-      name: 'Absent', 
-      value: absentPercentage, 
-      color: COLORS.secondaryDark,
-      count: summary?.totalAbsent || 0,
-      description: 'Employees who were absent'
-    },
-  ];
-
-  // Calculate overall attendance percentage
-  const overallAttendance = ((presentPercentage + latePercentage * 0.8 + halfDayPercentage * 0.5) / 100 * 100).toFixed(1);
-
-  // Custom label for pie chart
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
-    if (percent < 0.05) return null;
-    
-    const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontSize={isMobile ? 9 : 10}
-        fontWeight="bold"
-        className="drop-shadow-md"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    );
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-        <h3 className="text-xl font-semibold mb-2 sm:mb-0" style={{ color: COLORS.primaryDark }}>
-          Attendance Distribution
-        </h3>
-        <div className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-          Total: {totalEmployees || 0} employees
-        </div>
-      </div>
-
-      <div className="h-80 sm:h-96 flex flex-col">
-        <div className="flex-1 relative">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <defs>
-                {data.map((entry, index) => (
-                  <linearGradient key={index} id={`pieGradient${index}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={entry.color} stopOpacity={0.8} />
-                    <stop offset="100%" stopColor={entry.color} stopOpacity={0.3} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                outerRadius={isMobile ? 85 : 100}
-                innerRadius={isMobile ? 55 : 70}
-                dataKey="value"
-                label={renderCustomizedLabel}
-                labelLine={false}
-                onMouseEnter={(_, index) => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-                activeIndex={activeIndex}
-                activeShape={(props) => {
-                  const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-                  return (
-                    <g>
-                      <path
-                        d={`
-                          M${cx},${cy}
-                          L${cx + outerRadius * Math.cos(-startAngle * Math.PI / 180)},${cy + outerRadius * Math.sin(-startAngle * Math.PI / 180)}
-                          A${outerRadius},${outerRadius} 0 ${endAngle - startAngle > 180 ? 1 : 0},1 ${cx + outerRadius * Math.cos(-endAngle * Math.PI / 180)},${cy + outerRadius * Math.sin(-endAngle * Math.PI / 180)}
-                          L${cx},${cy}
-                        `}
-                        fill={fill}
-                        opacity={0.9}
-                        stroke={fill}
-                        strokeWidth={2}
-                      />
-                      <path
-                        d={`
-                          M${cx},${cy}
-                          L${cx + innerRadius * Math.cos(-startAngle * Math.PI / 180)},${cy + innerRadius * Math.sin(-startAngle * Math.PI / 180)}
-                          A${innerRadius},${innerRadius} 0 ${endAngle - startAngle > 180 ? 1 : 0},0 ${cx + innerRadius * Math.cos(-endAngle * Math.PI / 180)},${cy + innerRadius * Math.sin(-endAngle * Math.PI / 180)}
-                          L${cx},${cy}
-                        `}
-                        fill={fill}
-                        opacity={0.7}
-                      />
-                    </g>
-                  );
-                }}
-              >
-                {data.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={`url(#pieGradient${index})`} 
-                    stroke="#fff"
-                    strokeWidth={2}
-                  />
-                ))}
-              </Pie>
-              <Tooltip content={<CustomPieTooltip />} />
-            </PieChart>
-          </ResponsiveContainer>
-          
-          {/* Center text with overall attendance percentage */}
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
-            <div className="text-3xl font-bold" style={{ color: COLORS.primary }}>
-              {overallAttendance}%
-            </div>
-            <div className="text-xs text-gray-500 mt-1">Overall Attendance</div>
-          </div>
-        </div>
-        
-        {/* Enhanced legend with more information */}
-        <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} gap-3 mt-6`}>
-          {data.map((item, index) => (
-            <div 
-              key={index} 
-              className="flex items-start p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100"
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              <div 
-                className="w-4 h-4 rounded-sm mr-3 mt-0.5 flex-shrink-0"
-                style={{ backgroundColor: item.color }}
-              ></div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">{item.name}</div>
-                <div className="text-xs text-gray-600">{item.value.toFixed(1)}%</div>
-                <div className="text-xs text-gray-400 mt-1">{item.count} employees</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
@@ -914,11 +745,16 @@ export default function MonthlyAttendancePage() {
       <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: COLORS.lightBackground }}>
         <div className="bg-white p-6 rounded-xl shadow-lg max-w-md text-center">
           <h2 className="text-xl font-bold mb-4" style={{ color: COLORS.secondaryDark }}>No Data Available</h2>
-          <p className="text-gray-600">Please select a different month or check your business ID</p>
+      <p className="text-gray-600">Please select a different month or check your business ID</p>
         </div>
       </div>
     );
   }
+
+  // Calculate total days in the selected month
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth();
+  const totalDays = new Date(year, month + 1, 0).getDate();
 
   return (
     <div className="min-h-screen p-4 md:p-6" style={{ backgroundColor: COLORS.lightBackground }}>
@@ -939,19 +775,11 @@ export default function MonthlyAttendancePage() {
           summary={data.summary || {}} 
           workingDays={data.workingDays || 0} 
           holidays={data.holidays || 0} 
+          totalDays={totalDays}
         />
 
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
-          <div className="w-full lg:w-1/2">
-            <AttendanceTrendChart dailyStats={data.dailyStats || []} />
-          </div>
-          <div className="w-full lg:w-1/2">
-            <StatusDistributionChart 
-              summary={data.summary || {}} 
-              totalEmployees={data.totalEmployees || 0} 
-              workingDays={data.workingDays || 0} 
-            />
-          </div>
+        <div className="mb-8">
+          <AttendanceTrendChart dailyStats={data.dailyStats || []} />
         </div>
 
         <HolidayCalendar dailyStats={data.dailyStats || []} />
