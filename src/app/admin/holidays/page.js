@@ -33,8 +33,6 @@ const Holidays = () => {
         if (userData === 'No Token') {
           router.push('/login');
         } else {
-          console.log(userData);
-          
           setBusinessId(userData.businessId);
         }
       } catch (error) {
@@ -49,7 +47,6 @@ const Holidays = () => {
   useEffect(() => {
     const fetchHolidays = async () => {
       if (!businessId) return;
-      console.log(businessId);
       
       try {
         const response = await fetch(`/api/business/holiday?businessId=${businessId}`);
@@ -102,8 +99,6 @@ const Holidays = () => {
           date: new Date(newHoliday.date).toISOString()
         })
       });
-      console.log(businessId);
-      
       
       const data = await response.json();
       if (data.success) {
@@ -142,14 +137,14 @@ const Holidays = () => {
   if (error) return <div className="min-h-screen bg-[#FBF5DD] p-6 flex justify-center items-center text-red-500">Error: {error}</div>;
 
   return (
-    <div className="min-h-screen bg-[#FBF5DD] p-6">
+    <div className="min-h-screen bg-[#FBF5DD] p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-[#06202B]">Holiday Calendar</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#06202B]">Holiday Calendar</h1>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-[#DDA853] hover:bg-[#16404D] text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+            className="bg-[#DDA853] hover:bg-[#16404D] text-white font-semibold py-2 px-4 rounded-lg transition duration-300 w-full sm:w-auto text-center"
           >
             + New Holiday
           </button>
@@ -157,7 +152,8 @@ const Holidays = () => {
 
         {/* Holidays List */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
-          <div className="grid grid-cols-12 bg-[#06202B] text-white p-4 font-semibold">
+          {/* Table headers - hidden on mobile, shown on larger screens */}
+          <div className="hidden md:grid md:grid-cols-12 bg-[#06202B] text-white p-4 font-semibold">
             <div className="col-span-3">Name</div>
             <div className="col-span-2">Date</div>
             <div className="col-span-4">Description</div>
@@ -165,58 +161,96 @@ const Holidays = () => {
             <div className="col-span-1">Days Remaining</div>
           </div>
           
-          {allHolidays.map((holiday) => {
-            const daysRemaining = Math.ceil((new Date(holiday.date) - new Date()) / (1000 * 60 * 60 * 24));
-            const isUpcoming = isAfter(new Date(holiday.date), new Date());
-            const holidayType = holiday.isWeeklyHoliday ? 'Weekly' : 
-                              holiday.isCustomHoliday ? 'Custom' : 'Recurring';
-            
-            return (
-              <div 
-                key={holiday._id || holiday.date} 
-                className="grid grid-cols-12 p-4 border-b border-[#A6CDC6] hover:bg-[#F5EEDD] transition duration-200"
-              >
-                <div className="col-span-3 font-medium text-[#06202B]">{holiday.name}</div>
-                <div className="col-span-2 text-[#077A7D]">
-                  {format(new Date(holiday.date), 'MMM dd, yyyy')}
+          {allHolidays.length === 0 ? (
+            <div className="p-6 text-center text-[#16404D]">
+              No holidays found. Add your first holiday!
+            </div>
+          ) : (
+            allHolidays.map((holiday) => {
+              const daysRemaining = Math.ceil((new Date(holiday.date) - new Date()) / (1000 * 60 * 60 * 24));
+              const isUpcoming = isAfter(new Date(holiday.date), new Date());
+              const holidayType = holiday.isWeeklyHoliday ? 'Weekly' : 
+                                holiday.isCustomHoliday ? 'Custom' : 'Recurring';
+              
+              return (
+                <div key={holiday._id || holiday.date}>
+                  {/* Desktop view */}
+                  <div className="hidden md:grid md:grid-cols-12 p-4 border-b border-[#A6CDC6] hover:bg-[#F5EEDD] transition duration-200">
+                    <div className="col-span-3 font-medium text-[#06202B]">{holiday.name}</div>
+                    <div className="col-span-2 text-[#077A7D]">
+                      {format(new Date(holiday.date), 'MMM dd, yyyy')}
+                    </div>
+                    <div className="col-span-4 text-[#16404D] truncate">{holiday.description}</div>
+                    <div className="col-span-2">
+                      <span className="bg-[#E2F0FD] text-[#06202B] py-1 px-3 rounded-full text-sm">
+                        {holidayType}
+                      </span>
+                    </div>
+                    <div className="col-span-1">
+                      {isUpcoming ? (
+                        <span className="bg-[#7AE2CF] text-[#06202B] py-1 px-3 rounded-full text-sm">
+                          {daysRemaining} days
+                        </span>
+                      ) : (
+                        <span className="bg-[#F5EEDD] text-[#06202B] py-1 px-3 rounded-full text-sm">
+                          Passed
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Mobile view */}
+                  <div className="md:hidden p-4 border-b border-[#A6CDC6] hover:bg-[#F5EEDD] transition duration-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="font-medium text-[#06202B] text-lg">{holiday.name}</div>
+                      <div className="flex-shrink-0">
+                        <span className="bg-[#E2F0FD] text-[#06202B] py-1 px-2 rounded-full text-xs">
+                          {holidayType}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-[#077A7D] mb-2">
+                      {format(new Date(holiday.date), 'MMM dd, yyyy')}
+                    </div>
+                    
+                    <div className="text-[#16404D] mb-3 text-sm line-clamp-2">
+                      {holiday.description}
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      {isUpcoming ? (
+                        <span className="bg-[#7AE2CF] text-[#06202B] py-1 px-3 rounded-full text-xs">
+                          {daysRemaining} days remaining
+                        </span>
+                      ) : (
+                        <span className="bg-[#F5EEDD] text-[#06202B] py-1 px-3 rounded-full text-xs">
+                          Passed
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="col-span-4 text-[#16404D]">{holiday.description}</div>
-                <div className="col-span-2">
-                  <span className="bg-[#E2F0FD] text-[#06202B] py-1 px-3 rounded-full text-sm">
-                    {holidayType}
-                  </span>
-                </div>
-                <div className="col-span-1">
-                  {isUpcoming ? (
-                    <span className="bg-[#7AE2CF] text-[#06202B] py-1 px-3 rounded-full text-sm">
-                      {daysRemaining} days
-                    </span>
-                  ) : (
-                    <span className="bg-[#F5EEDD] text-[#06202B] py-1 px-3 rounded-full text-sm">
-                      Passed
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Add Holiday Modal */}
         {isModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-              <div className="bg-[#06202B] text-white p-4 rounded-t-xl flex justify-between items-center">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="bg-[#06202B] text-white p-4 rounded-t-xl flex justify-between items-center sticky top-0">
                 <h2 className="text-xl font-semibold">Add New Holiday</h2>
                 <button 
                   onClick={() => setIsModalOpen(false)}
-                  className="text-white hover:text-[#7AE2CF]"
+                  className="text-white hover:text-[#7AE2CF] text-xl"
                 >
                   ✕
                 </button>
               </div>
               
-              <form onSubmit={handleSubmit} className="p-6">
+              <form onSubmit={handleSubmit} className="p-4 md:p-6">
                 <div className="mb-4">
                   <label className="block text-[#16404D] font-medium mb-2">Holiday Name</label>
                   <input
@@ -259,7 +293,7 @@ const Holidays = () => {
                     name="recurring"
                     checked={newHoliday.recurring}
                     onChange={handleCheckboxChange}
-                    className="mr-2"
+                    className="mr-2 h-5 w-5"
                   />
                   <label className="text-[#16404D]">Recurring Holiday</label>
                 </div>
@@ -279,17 +313,17 @@ const Holidays = () => {
                   </div>
                 )}
                 
-                <div className="flex justify-end space-x-3">
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-3 mt-6">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 border border-[#06202B] text-[#06202B] rounded-lg hover:bg-[#F5EEDD] transition duration-300"
+                    className="px-4 py-3 sm:py-2 border border-[#06202B] text-[#06202B] rounded-lg hover:bg-[#F5EEDD] transition duration-300"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-[#077A7D] text-white rounded-lg hover:bg-[#16404D] transition duration-300"
+                    className="px-4 py-3 sm:py-2 bg-[#077A7D] text-white rounded-lg hover:bg-[#16404D] transition duration-300"
                   >
                     Save Holiday
                   </button>
